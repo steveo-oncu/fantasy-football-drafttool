@@ -42,6 +42,18 @@ when a keeper is announced late or someone's price turns out to be wrong.
 Keepers use `Team | Player | Price`, one per line. Names not in the player pool are
 still marked as drafted, they just carry no value.
 
+## Injury and suspension risk
+
+A short curated list of players carrying availability risk discounts their value for
+games they may not play, so scarcity, inflation and every going rate account for it.
+Flagged players carry a red marker in the pool and the reason appears in the bid check
+and on the recommendation card. Where a discount applies, the undiscounted price is
+shown alongside so you can see what was taken off.
+
+These notes were checked on 29 August 2026 and are a snapshot, not a feed. Re-check
+anything flagged on the morning of the draft — suspension rulings in particular can
+land at any time. The list lives in the `RISK` object near the top of the script.
+
 ## Bid increments
 
 The minimum bid is $5 and bids rise in $5 steps, so every price the app shows is a bid
