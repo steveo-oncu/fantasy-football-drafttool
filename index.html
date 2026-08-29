@@ -108,6 +108,7 @@ textarea.fld{min-height:104px;font-size:13px;line-height:1.6;resize:vertical;
 .rec.top{border-color:var(--amber);background:#160F02}
 .rec:last-child{margin-bottom:0}
 .recwhy{font-size:11px;color:var(--dim);margin-top:7px;line-height:1.45}
+.flag{display:inline-block;width:14px;height:14px;line-height:14px;text-align:center;border-radius:4px;background:var(--stop);color:#fff;font-size:10px;font-weight:800;vertical-align:1px}
 .dot{display:inline-block;width:5px;height:5px;border-radius:99px;background:var(--amber);margin-left:5px;vertical-align:2px}
 .tabs .btn.on .dot{background:#160E00}
 
@@ -266,12 +267,26 @@ textarea.fld{min-height:104px;font-size:13px;line-height:1.6;resize:vertical;
    18 roster spots, $1 minimum. Stored raw and rescaled to the configured league. */
 const SRC = [["Puka Nacua", "WR", "LAR", 11, 52], ["Jahmyr Gibbs", "RB", "DET", 6, 51], ["Bijan Robinson", "RB", "ATL", 11, 51], ["Ja'Marr Chase", "WR", "CIN", 6, 51], ["Jaxon Smith-Njigba", "WR", "SEA", 11, 48], ["Amon-Ra St. Brown", "WR", "DET", 6, 46], ["Christian McCaffrey", "RB", "SF", 8, 43], ["Jonathan Taylor", "RB", "IND", 13, 38], ["Drake London", "WR", "ATL", 11, 38], ["Justin Jefferson", "WR", "MIN", 6, 34], ["CeeDee Lamb", "WR", "DAL", 14, 34], ["James Cook", "RB", "BUF", 7, 33], ["Chris Olave", "WR", "NO", 8, 33], ["Omarion Hampton", "RB", "LAC", 7, 30], ["Saquon Barkley", "RB", "PHI", 10, 30], ["Rashee Rice", "WR", "KC", 5, 30], ["Nico Collins", "WR", "HOU", 8, 30], ["Ashton Jeanty", "RB", "LV", 13, 29], ["Chase Brown", "RB", "CIN", 6, 29], ["A.J. Brown", "WR", "NE", 11, 29], ["De'Von Achane", "RB", "MIA", 6, 28], ["Garrett Wilson", "WR", "NYJ", 13, 28], ["Brock Bowers", "TE", "LV", 13, 28], ["Kenneth Walker", "RB", "KC", 5, 27], ["Josh Allen", "QB", "BUF", 7, 26], ["Derrick Henry", "RB", "BAL", 13, 26], ["George Pickens", "WR", "DAL", 14, 26], ["DeVonta Smith", "WR", "PHI", 10, 26], ["Trey McBride", "TE", "ARI", 14, 26], ["Jeremiyah Love", "RB", "ARI", 14, 25], ["Breece Hall", "RB", "NYJ", 13, 25], ["Zay Flowers", "WR", "BAL", 13, 25], ["Kyren Williams", "RB", "LAR", 11, 24], ["Josh Jacobs", "RB", "GB", 11, 23], ["Malik Nabers", "WR", "NYG", 8, 23], ["Cam Skattebo", "RB", "NYG", 8, 22], ["Emeka Egbuka", "WR", "TB", 10, 22], ["Tetairoa McMillan", "WR", "CAR", 5, 22], ["Javonte Williams", "RB", "DAL", 14, 21], ["Davante Adams", "WR", "LAR", 11, 21], ["Jameson Williams", "WR", "DET", 6, 21], ["Bucky Irving", "RB", "TB", 10, 20], ["Ladd McConkey", "WR", "LAC", 7, 19], ["Jaylen Waddle", "WR", "DEN", 10, 19], ["Travis Etienne", "RB", "NO", 8, 18], ["D'Andre Swift", "RB", "CHI", 10, 18], ["Tee Higgins", "WR", "CIN", 6, 18], ["Christian Watson", "WR", "GB", 11, 17], ["D.J. Moore", "WR", "BUF", 7, 17], ["Mike Evans", "WR", "SF", 8, 17], ["Rome Odunze", "WR", "CHI", 10, 17], ["Luther Burden III", "WR", "CHI", 10, 17], ["Bhayshul Tuten", "RB", "JAC", 7, 16], ["Terry McLaurin", "WR", "WAS", 7, 16], ["DK Metcalf", "WR", "PIT", 9, 16], ["Colston Loveland", "TE", "CHI", 10, 16], ["Quinshon Judkins", "RB", "CLE", 11, 15], ["Marvin Harrison Jr.", "WR", "ARI", 14, 14], ["Tyler Warren", "TE", "IND", 13, 14], ["Drake Maye", "QB", "NE", 11, 13], ["Lamar Jackson", "QB", "BAL", 13, 13], ["Jalen Hurts", "QB", "PHI", 10, 13], ["David Montgomery", "RB", "HOU", 8, 13], ["Michael Pittman Jr.", "WR", "PIT", 9, 13], ["Harold Fannin Jr.", "TE", "CLE", 11, 13], ["Joe Burrow", "QB", "CIN", 6, 12], ["TreVeyon Henderson", "RB", "NE", 11, 12], ["Jaylen Warren", "RB", "PIT", 9, 12], ["Tony Pollard", "RB", "TEN", 9, 12], ["Courtland Sutton", "WR", "DEN", 10, 12], ["Jayden Reed", "WR", "GB", 11, 12], ["Alec Pierce", "WR", "IND", 13, 12], ["Jadarian Price", "RB", "SEA", 11, 11], ["Rhamondre Stevenson", "RB", "NE", 11, 11], ["Chuba Hubbard", "RB", "CAR", 5, 11], ["J.K. Dobbins", "RB", "DEN", 10, 11], ["Carnell Tate", "WR", "TEN", 9, 11], ["Kyle Pitts", "TE", "ATL", 11, 11], ["Rachaad White", "RB", "WAS", 7, 10], ["Jakobi Meyers", "WR", "JAC", 7, 10], ["Chris Godwin", "WR", "TB", 10, 10], ["Parker Washington", "WR", "JAC", 7, 10], ["Travis Kelce", "TE", "KC", 5, 10], ["Jayden Daniels", "QB", "WAS", 7, 9], ["Caleb Williams", "QB", "CHI", 10, 9], ["Rico Dowdle", "RB", "PIT", 9, 9], ["Jonathon Brooks", "RB", "CAR", 5, 9], ["RJ Harvey", "RB", "DEN", 10, 9], ["Wan'Dale Robinson", "WR", "TEN", 9, 9], ["Michael Wilson", "WR", "ARI", 14, 9], ["Brian Thomas Jr.", "WR", "JAC", 7, 9], ["Xavier Worthy", "WR", "KC", 5, 9], ["Khalil Shakir", "WR", "BUF", 7, 9], ["Romeo Doubs", "WR", "NE", 11, 9], ["Stefon Diggs", "WR", "WAS", 7, 9], ["Sam LaPorta", "TE", "DET", 6, 9], ["Mark Andrews", "TE", "BAL", 13, 9], ["Dak Prescott", "QB", "DAL", 14, 8], ["Aaron Jones", "RB", "MIN", 6, 8], ["Kenneth Gainwell", "RB", "TB", 10, 8], ["Josh Downs", "WR", "IND", 13, 8], ["Jordan Addison", "WR", "MIN", 6, 8], ["Quentin Johnston", "WR", "LAC", 7, 8], ["Bo Nix", "QB", "DEN", 10, 7], ["Justin Herbert", "QB", "LAC", 7, 7], ["Brock Purdy", "QB", "SF", 8, 7], ["Jacory Croskey-Merritt", "RB", "WAS", 7, 7], ["Blake Corum", "RB", "LAR", 11, 7], ["Matthew Golden", "WR", "GB", 11, 7], ["KC Concepcion", "WR", "CLE", 11, 7], ["De'Zhaun Stribling", "WR", "SF", 8, 7], ["Tucker Kraft", "TE", "GB", 11, 7], ["Jaxson Dart", "QB", "NYG", 8, 6], ["Jared Goff", "QB", "DET", 6, 6], ["Kyle Monangai", "RB", "CHI", 10, 6], ["Jordan Mason", "RB", "MIN", 6, 6], ["Alvin Kamara", "RB", "NO", 8, 6], ["Woody Marks", "RB", "HOU", 8, 6], ["Makai Lemon", "WR", "PHI", 10, 6], ["Rashid Shaheed", "WR", "SEA", 11, 6], ["Deebo Samuel", "WR", "SF", 8, 6], ["Jordyn Tyson", "WR", "NO", 8, 6], ["Jake Ferguson", "TE", "DAL", 14, 6], ["Trevor Lawrence", "QB", "JAC", 7, 5], ["Matthew Stafford", "QB", "LAR", 11, 5], ["Zach Charbonnet", "RB", "SEA", 11, 5], ["Tyjae Spears", "RB", "TEN", 9, 5], ["Dylan Sampson", "RB", "CLE", 11, 5], ["Chris Rodriguez Jr.", "RB", "JAC", 7, 5], ["Tyrone Tracy Jr.", "RB", "NYG", 8, 5], ["Jerry Jeudy", "WR", "CLE", 11, 5], ["Keenan Allen", "WR", "IND", 13, 5], ["Tre Tucker", "WR", "LV", 13, 5], ["Jalen Coker", "WR", "CAR", 5, 5], ["Jalen McMillan", "WR", "TB", 10, 5], ["Dallas Goedert", "TE", "PHI", 10, 5], ["George Kittle", "TE", "SF", 8, 5], ["Dalton Schultz", "TE", "HOU", 8, 5], ["Isiah Pacheco", "RB", "DET", 6, 4], ["Rashod Bateman", "WR", "BAL", 13, 4], ["Calvin Ridley", "WR", "TEN", 9, 4], ["Adonai Mitchell", "WR", "NYJ", 13, 4], ["Germie Bernard", "WR", "PIT", 9, 4], ["Jalen Nailor", "WR", "LV", 13, 4], ["Dalton Kincaid", "TE", "BUF", 7, 4], ["Patrick Mahomes", "QB", "KC", 5, 3], ["Tyler Shough", "QB", "NO", 8, 3], ["Brian Robinson Jr.", "RB", "ATL", 11, 3], ["Justice Hill", "RB", "BAL", 13, 3], ["Tyler Allgeier", "RB", "ARI", 14, 3], ["Keaton Mitchell", "RB", "LAC", 7, 3], ["Braelon Allen", "RB", "NYJ", 13, 3], ["Tank Bigsby", "RB", "PHI", 10, 3], ["Ray Davis", "RB", "BUF", 7, 3], ["Malik Washington", "WR", "MIA", 6, 3], ["Ryan Flournoy", "WR", "DAL", 14, 3], ["Jauan Jennings", "WR", "MIN", 6, 3], ["Denzel Boston", "WR", "CLE", 11, 3], ["Caleb Douglas", "WR", "MIA", 6, 3], ["Xavier Hutchinson", "WR", "HOU", 8, 3], ["Isaac TeSlaa", "WR", "DET", 6, 3], ["Hunter Henry", "TE", "NE", 11, 3], ["Isaiah Likely", "TE", "NYG", 8, 3], ["Juwan Johnson", "TE", "NO", 8, 3], ["Kyler Murray", "QB", "MIN", 6, 2], ["Malik Willis", "QB", "MIA", 6, 2], ["Sam Darnold", "QB", "SEA", 11, 2], ["MarShawn Lloyd", "RB", "GB", 11, 2], ["Samaje Perine", "RB", "CIN", 6, 2], ["George Holani", "RB", "SEA", 11, 2], ["Kimani Vidal", "RB", "LAC", 7, 2], ["Travis Hunter", "WR", "JAC", 7, 2], ["Devaughn Vele", "WR", "NO", 8, 2], ["Pat Freiermuth", "TE", "PIT", 9, 2], ["Greg Dulcich", "TE", "MIA", 6, 2], ["Denver D/ST", "DEF", "DEN", 10, 2], ["Houston D/ST", "DEF", "HOU", 8, 2], ["Baker Mayfield", "QB", "TB", 10, 1], ["Jordan Love", "QB", "GB", 11, 1], ["Xavier Legette", "WR", "CAR", 5, 1], ["Ty Johnson", "RB", "BUF", 7, 1], ["Brenton Strange", "TE", "JAC", 7, 1], ["Brandon Aubrey", "K", "DAL", 14, 1], ["Mike Washington Jr.", "RB", "LV", 13, 1], ["Jonah Coleman", "RB", "DEN", 10, 1], ["Cooper Kupp", "WR", "SEA", 11, 1], ["Darius Slayton", "WR", "NYG", 8, 1], ["Jaylin Noel", "WR", "HOU", 8, 1], ["Jaydon Blue", "RB", "DAL", 14, 1], ["Cameron Dicker", "K", "LAC", 7, 1], ["Seattle D/ST", "DEF", "SEA", 11, 1], ["Sean Tucker", "RB", "TB", 10, 1], ["Tre Harris", "WR", "LAC", 7, 1], ["Pat Bryant", "WR", "DEN", 10, 1], ["Omar Cooper Jr.", "WR", "NYJ", 13, 1], ["Emari Demercado", "RB", "KC", 5, 1], ["Minnesota D/ST", "DEF", "MIN", 6, 1], ["Tyquan Thornton", "WR", "KC", 5, 1], ["Ja'Kobi Lane", "WR", "BAL", 13, 1], ["Pittsburgh D/ST", "DEF", "PIT", 9, 1], ["Los Angeles Rams D/ST", "DEF", "LAR", 11, 1], ["Los Angeles Chargers D/ST", "DEF", "LAC", 7, 1], ["Philadelphia D/ST", "DEF", "PHI", 10, 1], ["New England D/ST", "DEF", "NE", 11, 1], ["Detroit D/ST", "DEF", "DET", 6, 1], ["Buffalo D/ST", "DEF", "BUF", 7, 1], ["Jacksonville D/ST", "DEF", "JAC", 7, 1], ["Ka'imi Fairbairn", "K", "HOU", 8, 1], ["Jason Myers", "K", "SEA", 11, 1], ["Wil Lutz", "K", "DEN", 10, 1], ["Chase McLaughlin", "K", "TB", 10, 1], ["Harrison Butker", "K", "KC", 5, 1], ["Eddy Pineiro", "K", "SF", 8, 1], ["Tyler Loop", "K", "BAL", 13, 1], ["Jake Bates", "K", "DET", 6, 1], ["Cam Little", "K", "JAC", 7, 1], ["Will Reichard", "K", "MIN", 6, 1]];
 const SRC_TEAMS=12, SRC_BUDGET=200, SRC_SLOTS=18, SRC_MIN=1;
-const DEFAULT_CFG = {"name": "Draft", "budget": 600, "min": 5, "slots": 15, "lineup": [["QB", 1], ["RB", 2], ["WR", 2], ["TE", 1], ["FLEX", 1], ["K", 1], ["DEF", 1]], "teams": ["Me", "Cliff", "David", "Miller", "Arlie", "Rick", "Bob", "Jimmy", "Dan", "New Team 2"], "keepers": [["Cliff", "Amon-Ra St. Brown", 145], ["Cliff", "Jared Goff", 25], ["David", "Ja'Marr Chase", 160], ["David", "Jaxon Smith-Njigba", 75], ["Miller", "Kenneth Walker", 100], ["Miller", "Omarion Hampton", 95], ["Arlie", "Tucker Kraft", 20], ["Arlie", "Javonte Williams", 15], ["Rick", "Jayden Daniels", 75], ["Bob", "Harold Fannin Jr.", 25], ["Bob", "Chris Olave", 25], ["Jimmy", "Dak Prescott", 25], ["Jimmy", "Brock Bowers", 15], ["Dan", "Justin Herbert", 30], ["Dan", "Dalton Kincaid", 25]]};
+const DEFAULT_CFG = {"name": "Draft", "budget": 600, "min": 5, "slots": 15, "lineup": [["QB", 1], ["RB", 2], ["WR", 2], ["TE", 1], ["FLEX", 1], ["K", 1], ["DEF", 1]], "teams": ["Me", "Cliff", "David", "Miller", "Arlie", "Rick", "Bob", "Jimmy", "Dan", "Gary"], "keepers": [["Cliff", "Amon-Ra St. Brown", 145], ["Cliff", "Jared Goff", 25], ["David", "Ja'Marr Chase", 160], ["David", "Jaxon Smith-Njigba", 75], ["Miller", "Kenneth Walker", 100], ["Miller", "Omarion Hampton", 95], ["Arlie", "Tucker Kraft", 20], ["Arlie", "Javonte Williams", 15], ["Rick", "Jayden Daniels", 75], ["Bob", "Harold Fannin Jr.", 25], ["Bob", "Chris Olave", 25], ["Jimmy", "Dak Prescott", 25], ["Jimmy", "Brock Bowers", 15], ["Dan", "Justin Herbert", 30], ["Dan", "Dalton Kincaid", 25], ["Gary", "Drake Maye", 10], ["Gary", "George Pickens", 25]]};
 const CFG_KEY="draftboard.cfg.v2", KEY="draftboard.state.v2";
 const POSMAP = {FLEX:["RB","WR","TE"]};
 
 let CFG = loadJSON(CFG_KEY) || structuredClone(DEFAULT_CFG);
 let P = [], byName = {}, SCALE = 1;
+
+/* Hand-checked news as of 29 Aug 2026. The factor discounts a player's value for
+   games he may not play; 1.00 means the note is informational only. Applied inside
+   buildPool so scarcity, inflation and every going rate account for it. */
+const RISK = {
+  "Josh Jacobs":      [0.72, "Battery and criminal damage charges. Suspension possible this season or deferred to 2027."],
+  "Puka Nacua":       [0.93, "Suspension undecided. Roughly a coin flip; precedent points to 1–2 games if it lands."],
+  "Jeremiyah Love":   [0.90, "Ankle from the Aug 13 preseason opener. Week 1 possible but not guaranteed."],
+  "Patrick Mahomes":  [0.90, "Back from a torn ACL. Not missing practice, but no Week 1 commitment and less rushing upside."],
+  "Zach Charbonnet":  [0.90, "On the active/PUP or NFI list."],
+  "Malik Nabers":     [0.97, "Worst case looks like a game or two missed. On track for Week 1."],
+  "Alec Pierce":      [0.95, "Off PUP on Aug 27, aiming for Week 1. Daniel Jones's status matters here too."],
+  "Rashee Rice":      [1.00, "Reported as not expected to be suspended — the probation matter was not a new violation."],
+};
 
 function buildPool(){
   const pot   = CFG.teams.length * CFG.budget;
@@ -279,8 +294,14 @@ function buildPool(){
   const srcPot   = SRC_TEAMS*SRC_BUDGET;
   const srcFloor = SRC_TEAMS*SRC_SLOTS*SRC_MIN;
   SCALE = (pot - floor) / (srcPot - srcFloor);
-  P = SRC.map((r,i)=>({i, n:r[0], p:r[1], t:r[2], b:r[3],
-                       v:Math.max(CFG.min, Math.round(CFG.min + (r[4]-SRC_MIN)*SCALE))}));
+  P = SRC.map((r,i)=>{
+    const risk = RISK[r[0]] || null;
+    const raw  = CFG.min + (r[4]-SRC_MIN)*SCALE;
+    return {i, n:r[0], p:r[1], t:r[2], b:r[3],
+            v:Math.max(CFG.min, Math.round(raw*(risk?risk[0]:1))),
+            full:Math.max(CFG.min, Math.round(raw)),
+            risk:risk?risk[1]:null, hit:risk?1-risk[0]:0};
+  });
   byName = {}; P.forEach(p=>byName[p.n.toLowerCase()]=p);
 }
 function freshState(){
@@ -442,7 +463,7 @@ function suggest(){
   const d=drafted(), hits=P.filter(p=>p.n.toLowerCase().includes(q)).slice(0,5);
   box.innerHTML = hits.length?'<div style="margin-top:7px">'+hits.map(p=>
     `<div class="prow" style="padding:7px 0;${d.has(p.n)?'opacity:.4':''}" onclick="pickSugg(${p.i})">
-       <div class="pmain"><div class="pname">${esc(p.n)}${d.has(p.n)?' · gone':''}</div>
+       <div class="pmain"><div class="pname">${esc(p.n)}${p.risk?' <span class="flag">!</span>':""}${d.has(p.n)?' · gone':''}</div>
        <div class="pmeta"><span class="tag ${p.p}">${p.p}</span>${p.t} · bye ${p.b}</div></div>
        <div class="pval num">$${expected(p)}</div></div>`).join("")+"</div>":"";
 }
@@ -484,6 +505,7 @@ function verdict(){
     const clash=S.picks.filter(x=>x.tm===ME()).map(x=>byName[x.n.toLowerCase()])
       .filter(p=>p&&p.b===sel.b&&["QB","RB","WR","TE"].includes(p.p));
     if(clash.length>=2) lines.push(`⚠︎ Week ${sel.b} bye already takes out ${clash.length} of yours`);
+    if(sel.risk) lines.push(`<span style="color:var(--hold)">${sel.hit?`Discounted ${Math.round(sel.hit*100)}% — `:""}${sel.risk}</span>`);
     lines.push(rivals.length?`${rivals.length} team${rivals.length>1?"s":""} can still top $${next}: ${rivals.slice(0,4).map(esc).join(", ")}${rivals.length>4?"…":""}`
                             :`<b>Nobody left can outbid you.</b>`);
   }
@@ -697,7 +719,7 @@ function render(){
             </div>
             <button class="btn tiny" onclick="openSheet(${p.i})">Sold</button>
           </div>
-          <div class="recwhy">${why.join(" · ")}${r.tight?` · <span style="color:var(--hold)">stretches your budget</span>`:""}</div>
+          <div class="recwhy">${why.join(" · ")}${r.tight?` · <span style="color:var(--hold)">stretches your budget</span>`:""}${p.risk?`<div style="color:var(--hold);margin-top:5px">! ${esc(p.risk)}</div>`:""}</div>
         </div>`}).join("")
       : `<div class="hint">${recFilter==="ALL"?"Nothing left you can afford at your ceiling.":`No ${recFilter} left within your $${maxBid(me)} ceiling.`}</div>`);
 
@@ -711,8 +733,8 @@ function render(){
     const w=expected(p);
     return `<div class="prow">
       <div class="pmain" onclick="pickSugg(${p.i});scrollTo({top:0,behavior:'smooth'})">
-        <div class="pname">${esc(p.n)}</div>
-        <div class="pmeta"><span class="tag ${p.p}">${p.p}</span>${p.t} · bye ${p.b}</div></div>
+        <div class="pname">${esc(p.n)}${p.risk?' <span class="flag">!</span>':""}</div>
+        <div class="pmeta"><span class="tag ${p.p}">${p.p}</span>${p.t} · bye ${p.b}${p.hit?` · <span style="color:var(--stop)">was $${snap(p.full*inflation()*posInfo(p.p).heat)}</span>`:""}</div></div>
       <div class="pval num" style="${w>cap?"color:var(--dim)":""}">$${w}</div>
       <button class="btn tiny" onclick="openSheet(${p.i})">Sold</button></div>`;
   }).join("")||'<div class="hint" style="padding:14px 0">Nobody matches that.</div>';
