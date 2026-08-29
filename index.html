@@ -167,11 +167,11 @@ textarea.fld{min-height:104px;font-size:13px;line-height:1.6;resize:vertical;
     <h2>Bid check</h2>
     <div class="rowf">
       <input id="q-name" class="fld" placeholder="Player" autocomplete="off" autocorrect="off" spellcheck="false">
-      <input id="q-bid" class="fld num" type="number" inputmode="numeric" placeholder="$" style="max-width:104px">
+      <input id="q-bid" class="fld num" type="number" inputmode="numeric" min="5" step="5" placeholder="$" style="max-width:104px">
     </div>
     <div id="q-sugg"></div>
     <div id="slab" class="slab"><div class="call" style="font-size:19px;color:var(--dim)">Type a name</div>
-      <div class="sub">Start typing and tap a match, then enter the current bid.</div></div>
+      <div class="sub">Type a name, tap the match, then enter the <b>current</b> bid on the floor. Bids move in $5 steps.</div></div>
   </section>
 
   <section class="card">
@@ -227,7 +227,7 @@ textarea.fld{min-height:104px;font-size:13px;line-height:1.6;resize:vertical;
     <div class="hint" style="margin-top:12px;color:var(--text)">Who won him?</div>
     <div class="grid2" id="sh-teams"></div>
     <div class="hint" style="color:var(--text)">Winning price</div>
-    <input id="sh-price" class="fld num" type="number" inputmode="numeric" style="margin-top:6px">
+    <input id="sh-price" class="fld num" type="number" inputmode="numeric" min="5" step="5" style="margin-top:6px">
     <div class="rowf" style="margin-top:12px">
       <button class="btn amber" style="flex:1" onclick="confirmDraft()">Record</button>
       <button class="btn" onclick="closeSheet()">Cancel</button>
@@ -301,11 +301,19 @@ let filter="ALL", recFilter="ALL", sel=null, pending=null, pendTeam=null;
 function loadJSON(k){ try{const r=localStorage.getItem(k);return r?JSON.parse(r):null}catch(e){return null} }
 function save(){ try{localStorage.setItem(KEY,JSON.stringify(S));localStorage.setItem(CFG_KEY,JSON.stringify(CFG))}catch(e){} render(); }
 
+/* Bids move in fixed increments, so every price the app shows must be a bid you can
+   actually make. STEP is the increment; here it equals the minimum. */
+const STEP  = () => CFG.step || CFG.min;
+const snap  = n => Math.max(CFG.min, Math.round(n/STEP())*STEP());
+const floorStep = n => Math.max(CFG.min, Math.floor(n/STEP())*STEP());
+const ceilStep  = n => Math.max(CFG.min, Math.ceil (n/STEP())*STEP());
+
 const ME = () => CFG.teams[0];
 const drafted = () => new Set(S.picks.map(x=>x.n));
 const avail = () => { const d=drafted(); return P.filter(p=>!d.has(p.n)); };
 const slotsLeft = t => CFG.slots - (S.teams[t]?.used||0);
-const maxBid = t => Math.max(0, (S.teams[t]?.cash||0) - Math.max(0,slotsLeft(t)-1)*CFG.min);
+const maxBid = t => { const raw=(S.teams[t]?.cash||0)-Math.max(0,slotsLeft(t)-1)*CFG.min;
+                      return raw<CFG.min ? 0 : floorStep(raw); };
 
 function inflation(){
   let cash=0, slots=0;
@@ -314,7 +322,7 @@ function inflation(){
   const val = avail().sort((a,b)=>b.v-a.v).slice(0,slots).reduce((s,p)=>s+p.v,0);
   return val>0 ? cash/val : 1;
 }
-const adj = p => Math.max(CFG.min, Math.round(CFG.min + (p.v-CFG.min)*inflation()));
+const adj = p => snap(CFG.min + (p.v-CFG.min)*inflation());
 
 function fitsSlot(pos, slot){ return slot===pos || (POSMAP[slot]||[]).includes(pos); }
 function myNeeds(){
@@ -390,7 +398,7 @@ function buildCache(){
 }
 const posInfo = pos => (CACHE||buildCache()).pos[pos]||{heat:1,rep:CFG.min,demand:0,supply:0};
 /* going rate: what this player should actually cost once scarcity is priced in */
-const expected = p => Math.max(CFG.min, Math.round(adj(p)*posInfo(p.p).heat));
+const expected = p => snap(adj(p)*posInfo(p.p).heat);
 
 function recommend(only){
   const me=ME(), cap=maxBid(me), open=openSlotsFor(me);
@@ -405,7 +413,7 @@ function recommend(only){
     }}); }
   /* money that must survive this purchase to fill the other open starting slots */
   const reserve = slot => { const c=["RB","WR","TE","QB","K","DEF"].find(x=>fitsSlot(x,slot));
-                            return Math.max(CFG.min, Math.round(posInfo(c||"RB").rep*0.6)) };
+                            return snap(posInfo(c||"RB").rep*0.6) };
   const list = avail().filter(p=>
       !only || only==="ALL" || (only==="FLEX" ? fitsSlot(p.p,"FLEX") : p.p===only)
     ).map(p=>{
@@ -436,7 +444,7 @@ function suggest(){
     `<div class="prow" style="padding:7px 0;${d.has(p.n)?'opacity:.4':''}" onclick="pickSugg(${p.i})">
        <div class="pmain"><div class="pname">${esc(p.n)}${d.has(p.n)?' · gone':''}</div>
        <div class="pmeta"><span class="tag ${p.p}">${p.p}</span>${p.t} · bye ${p.b}</div></div>
-       <div class="pval num">$${adj(p)}</div></div>`).join("")+"</div>":"";
+       <div class="pval num">$${expected(p)}</div></div>`).join("")+"</div>":"";
 }
 function pickSugg(i){
   sel=P[i];
@@ -444,40 +452,47 @@ function pickSugg(i){
   document.getElementById("q-sugg").innerHTML="";
   const bid=document.getElementById("q-bid");
   if(!bid.value) bid.value=CFG.min;
+  bid.step=STEP(); bid.min=CFG.min;
   verdict();
 }
 function verdict(){
   const slab=document.getElementById("slab");
   if(!sel){slab.className="slab";slab.innerHTML='<div class="call" style="font-size:19px;color:var(--dim)">Type a name</div><div class="sub">Start typing and tap a match, then enter the current bid.</div>';return}
-  const bid=Math.max(0,Math.round(+document.getElementById("q-bid").value||0));
-  const worth=adj(sel), cap=maxBid(ME()), gone=drafted().has(sel.n);
+  const typed=Math.max(0,Math.round(+document.getElementById("q-bid").value||0));
+  const bid=typed?snap(typed):0;                 // what was actually shouted, on-increment
+  const next=bid?bid+STEP():CFG.min;             // what it would cost you to stay in
+  const worth=expected(sel), cap=maxBid(ME()), gone=drafted().has(sel.n);
+  const ceiling=Math.min(worth,cap);
+  const walk=floorStep(ceiling);                 // highest legal bid still worth making
   const demand=slotDemandFor(sel.p);
-  const rivals=CFG.teams.filter(t=>t!==ME()&&slotsLeft(t)>0&&maxBid(t)>bid)
+  const rivals=CFG.teams.filter(t=>t!==ME()&&slotsLeft(t)>0&&maxBid(t)>=next)
                         .sort((a,b)=>maxBid(b)-maxBid(a));
   let cls,call,lines=[];
   if(gone){cls="stop";call="Off the board";lines.push("Already drafted.")}
-  else if(bid>cap){cls="stop";call="Can't";
-    lines.push(`Over your $${cap} ceiling — you must keep $${CFG.min} for each of your other ${slotsLeft(ME())-1} slots.`)}
-  else if(bid<=Math.round(worth*0.8)){cls="go";call="Bargain"}
-  else if(bid<=worth){cls="go";call="Bid"}
-  else if(bid<=Math.round(worth*1.12)){cls="hold";call="At market"}
+  else if(next>cap){cls="stop";call="Can't";
+    lines.push(`$${next} is past your $${cap} ceiling — you must keep $${CFG.min} for each of your other ${slotsLeft(ME())-1} slots.`)}
+  else if(next<=Math.round(worth*0.8)){cls="go";call="Bargain"}
+  else if(next<=walk){cls="go";call="Bid"}
+  else if(next<=snap(worth*1.12)){cls="hold";call="At market"}
   else {cls="stop";call="Let him go"}
 
-  if(!gone&&bid<=cap){
-    lines.push(`Worth <b>$${worth}</b> · your ceiling <b>$${cap}</b>`);
+  if(!gone&&next<=cap){
+    lines.push(`Next bid <b>$${next}</b> · worth <b>$${worth}</b> · your ceiling <b>$${cap}</b>`);
+    lines.push(walk>=next?`Stay in up to <b>$${walk}</b>`:`Past value — walking away is fine`);
     lines.push(demand>0?`Fills a starting <b>${sel.p}</b> slot (${demand} open)`
                        :`Bench depth — your ${sel.p} starters are set`);
     const clash=S.picks.filter(x=>x.tm===ME()).map(x=>byName[x.n.toLowerCase()])
       .filter(p=>p&&p.b===sel.b&&["QB","RB","WR","TE"].includes(p.p));
     if(clash.length>=2) lines.push(`⚠︎ Week ${sel.b} bye already takes out ${clash.length} of yours`);
-    lines.push(rivals.length?`${rivals.length} team${rivals.length>1?"s":""} can still top this: ${rivals.slice(0,4).map(esc).join(", ")}${rivals.length>4?"…":""}`
+    lines.push(rivals.length?`${rivals.length} team${rivals.length>1?"s":""} can still top $${next}: ${rivals.slice(0,4).map(esc).join(", ")}${rivals.length>4?"…":""}`
                             :`<b>Nobody left can outbid you.</b>`);
   }
-  const pct=Math.min(100,Math.round(bid/Math.max(worth,1)*100));
+  if(typed && typed!==bid) lines.unshift(`<span style="color:var(--hold)">$${typed} isn't a legal bid — read as $${bid}</span>`);
+  const pct=Math.min(100,Math.round(next/Math.max(worth,1)*100));
   slab.className="slab "+cls;
   slab.innerHTML=`<div class="call">${call}</div>
     <div class="bar"><i style="width:${pct}%;background:var(--${cls})"></i></div>
-    <div class="barlab"><span>$${bid}</span><span>worth $${worth}</span></div>
+    <div class="barlab"><span>next $${next}</span><span>worth $${worth}</span></div>
     <div class="sub">${lines.join("<br>")}</div>`;
 }
 
@@ -486,8 +501,8 @@ function openSheet(i){
   pending=P[i]; pendTeam=null;
   document.getElementById("sh-name").textContent=pending.n;
   document.getElementById("sh-meta").innerHTML=
-    `<span class="tag ${pending.p}">${pending.p}</span>${pending.t} · bye ${pending.b} · worth $${adj(pending)}`;
-  document.getElementById("sh-price").value=adj(pending);
+    `<span class="tag ${pending.p}">${pending.p}</span>${pending.t} · bye ${pending.b} · going rate $${expected(pending)}`;
+  document.getElementById("sh-price").value=expected(pending);
   document.getElementById("sh-teams").innerHTML=CFG.teams.map(t=>
     `<div class="pick" id="pk-${cssId(t)}" onclick="pickTeam(${JSON.stringify(t).replace(/"/g,'&quot;')})">${esc(t)}</div>`).join("");
   document.getElementById("veil").classList.add("on");
@@ -500,7 +515,7 @@ function closeSheet(){document.getElementById("veil").classList.remove("on");pen
 function confirmDraft(){
   if(!pending)return;
   if(!pendTeam)return toast("Pick a team first");
-  const price=Math.max(CFG.min,Math.round(+document.getElementById("sh-price").value||CFG.min));
+  const price=snap(+document.getElementById("sh-price").value||CFG.min);
   const T=S.teams[pendTeam];
   if(price>T.cash)return toast(pendTeam+" only has $"+T.cash);
   if(slotsLeft(pendTeam)<=0)return toast(pendTeam+"'s roster is full");
@@ -693,7 +708,7 @@ function render(){
   list.sort((a,b)=>b.v-a.v);
   const cap=maxBid(me);
   document.getElementById("pool").innerHTML=list.slice(0,60).map(p=>{
-    const w=adj(p);
+    const w=expected(p);
     return `<div class="prow">
       <div class="pmain" onclick="pickSugg(${p.i});scrollTo({top:0,behavior:'smooth'})">
         <div class="pname">${esc(p.n)}</div>

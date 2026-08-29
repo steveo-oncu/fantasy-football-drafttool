@@ -6,8 +6,11 @@ a live draft.
 
 ## What it does
 
-- **Bid check** — type a player and the current bid, get a green/amber/red call. The
-  ceiling accounts for the money you must hold back to fill your remaining roster spots.
+- **Bid check** — type a player and the bid currently on the floor. The call is about
+  the *next* bid, since that is the one you would actually make, and it tells you the
+  highest legal bid worth staying in for. Your ceiling accounts for the money you must
+  hold back to fill your remaining roster spots. An off-increment number is read as the
+  nearest legal bid and flagged.
 - **Live inflation** — recalculates the market after every pick. Cash still in the room
   divided by the value of the players still worth buying. Player values move with it.
 - **Every pick, every team** — record who won each player and at what price. Rival
@@ -38,6 +41,12 @@ when a keeper is announced late or someone's price turns out to be wrong.
 
 Keepers use `Team | Player | Price`, one per line. Names not in the player pool are
 still marked as drafted, they just carry no value.
+
+## Bid increments
+
+The minimum bid is $5 and bids rise in $5 steps, so every price the app shows is a bid
+you can actually make. Values, going rates, ceilings and recorded sale prices all snap
+to the increment; nothing suggests a number you cannot say out loud.
 
 ## Player values
 
