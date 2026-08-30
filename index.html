@@ -108,7 +108,18 @@ textarea.fld{min-height:104px;font-size:13px;line-height:1.6;resize:vertical;
 .rec.top{border-color:var(--amber);background:#160F02}
 .rec:last-child{margin-bottom:0}
 .recwhy{font-size:11px;color:var(--dim);margin-top:7px;line-height:1.45}
+.kp{display:inline-block;padding:0 4px;border-radius:3px;background:#2A3A55;color:#9FB6D6;font-size:9px;font-weight:800;vertical-align:1px}
+.bnmeta{font-size:10.5px;color:var(--dim);white-space:nowrap}
+.star{min-width:30px}.star.on{background:#3A2B06;color:var(--amber)}
 .flag{display:inline-block;width:14px;height:14px;line-height:14px;text-align:center;border-radius:4px;background:var(--stop);color:#fff;font-size:10px;font-weight:800;vertical-align:1px}
+.tgrp{border-bottom:1px solid var(--line)}
+.thead{display:flex;align-items:center;gap:8px;padding:10px 0;cursor:pointer}
+.tabbr{font-family:var(--disp);font-size:16px;font-weight:700;letter-spacing:.04em;min-width:44px}
+.tbye{font-size:11px;color:var(--dim);min-width:96px}
+.tbye.warn{color:var(--hold)}.tbye.bad{color:var(--stop);font-weight:700}
+.tcount{flex:1;text-align:right;font-size:11px;color:var(--dim)}
+.tchev{font-family:var(--disp);font-size:17px;color:var(--dim);min-width:14px;text-align:center}
+.tbody{padding:0 0 6px 6px;border-left:2px solid var(--line);margin-left:4px}
 .dot{display:inline-block;width:5px;height:5px;border-radius:99px;background:var(--amber);margin-left:5px;vertical-align:2px}
 .tabs .btn.on .dot{background:#160E00}
 
@@ -168,7 +179,8 @@ textarea.fld{min-height:104px;font-size:13px;line-height:1.6;resize:vertical;
     <h2>Bid check</h2>
     <div class="rowf">
       <input id="q-name" class="fld" placeholder="Player" autocomplete="off" autocorrect="off" spellcheck="false">
-      <input id="q-bid" class="fld num" type="number" inputmode="numeric" min="5" step="5" placeholder="$" style="max-width:104px">
+      <input id="q-bid" class="fld num" type="number" inputmode="numeric" min="5" step="5" placeholder="$" style="max-width:92px">
+      <button class="btn" onclick="clearBid()" title="Clear" style="padding:11px 15px">✕</button>
     </div>
     <div id="q-sugg"></div>
     <div id="slab" class="slab"><div class="call" style="font-size:19px;color:var(--dim)">Type a name</div>
@@ -183,15 +195,28 @@ textarea.fld{min-height:104px;font-size:13px;line-height:1.6;resize:vertical;
 
   <section class="card">
     <h2>Available</h2>
-    <div class="tabs" id="tabs"></div>
+    <div class="rowf" style="align-items:center;gap:7px;margin-bottom:9px">
+      <div class="tabs" id="tabs" style="margin-bottom:0;flex:1"></div>
+      <select id="nflteam" class="fld" style="width:auto;min-width:104px;padding:7px 9px;font-size:13px"></select>
+    </div>
     <input id="q-search" class="fld" placeholder="Search all players" autocomplete="off" spellcheck="false" style="margin-bottom:9px">
     <div class="plist" id="pool"></div>
+  </section>  <section class="card">
+    <h2>By NFL team</h2>
+    <div class="tabs">
+      <button class="btn sm" id="ts-team" onclick="teamSort='team';render()">A–Z</button>
+      <button class="btn sm" id="ts-bye"  onclick="teamSort='bye';render()">By bye week</button>
+      <button class="btn sm" id="ts-mine" onclick="teamSort='mine';render()">My byes</button>
+    </div>
+    <div class="hint" id="teamhint"></div>
+    <div class="plist" id="byteam"></div>
   </section>
+
 </main>
 
 <aside>
   <section class="card">
-    <h2>My roster</h2>
+    <h2>Roster <select id="rosterteam" class="fld" style="width:auto;padding:5px 8px;font-size:12px;text-transform:none;letter-spacing:0"></select></h2>
     <div id="roster"></div>
     <div id="byewarn"></div>
   </section>
@@ -200,6 +225,11 @@ textarea.fld{min-height:104px;font-size:13px;line-height:1.6;resize:vertical;
     <h2>Who can outbid me</h2>
     <div id="league"></div>
     <div class="hint" style="margin-top:9px">Max bid = that team's cash minus the minimum held back for each empty slot after this one.</div>
+  </section>
+
+  <section class="card">
+    <h2>Watch list</h2>
+    <div id="watch"></div>
   </section>
 
   <section class="card">
@@ -228,7 +258,11 @@ textarea.fld{min-height:104px;font-size:13px;line-height:1.6;resize:vertical;
     <div class="hint" style="margin-top:12px;color:var(--text)">Who won him?</div>
     <div class="grid2" id="sh-teams"></div>
     <div class="hint" style="color:var(--text)">Winning price</div>
-    <input id="sh-price" class="fld num" type="number" inputmode="numeric" min="5" step="5" style="margin-top:6px">
+    <div class="rowf" style="margin-top:6px">
+      <button class="btn" onclick="bump(-1)" style="min-width:52px">−</button>
+      <input id="sh-price" class="fld num" type="text" inputmode="numeric" pattern="[0-9]*" style="text-align:center">
+      <button class="btn" onclick="bump(1)" style="min-width:52px">+</button>
+    </div>
     <div class="rowf" style="margin-top:12px">
       <button class="btn amber" style="flex:1" onclick="confirmDraft()">Record</button>
       <button class="btn" onclick="closeSheet()">Cancel</button>
@@ -312,12 +346,15 @@ function freshState(){
     s.picks.push({n:name,tm,$:+cost,keep:true});
     s.teams[tm].cash-=+cost; s.teams[tm].used+=1;
   });
+  s.watch=[];
   return s;
 }
 buildPool();
 let S = loadJSON(KEY) || freshState();
 if(!S.teams || Object.keys(S.teams).length!==CFG.teams.length) S=freshState();
-let filter="ALL", recFilter="ALL", sel=null, pending=null, pendTeam=null;
+if(!Array.isArray(S.watch)) S.watch=[];
+let filter="ALL", recFilter="ALL", teamSort="team", openTeam=null, nflFilter="ALL", rosterView=null,
+    sel=null, pending=null, pendTeam=null;
 
 function loadJSON(k){ try{const r=localStorage.getItem(k);return r?JSON.parse(r):null}catch(e){return null} }
 function save(){ try{localStorage.setItem(KEY,JSON.stringify(S));localStorage.setItem(CFG_KEY,JSON.stringify(CFG))}catch(e){} render(); }
@@ -331,6 +368,7 @@ const ceilStep  = n => Math.max(CFG.min, Math.ceil (n/STEP())*STEP());
 
 const ME = () => CFG.teams[0];
 const drafted = () => new Set(S.picks.map(x=>x.n));
+const ownerOf = n => S.picks.find(x=>x.n===n) || null;   // team + price for a gone player
 const avail = () => { const d=drafted(); return P.filter(p=>!d.has(p.n)); };
 const slotsLeft = t => CFG.slots - (S.teams[t]?.used||0);
 const maxBid = t => { const raw=(S.teams[t]?.cash||0)-Math.max(0,slotsLeft(t)-1)*CFG.min;
@@ -463,8 +501,9 @@ function suggest(){
   const d=drafted(), hits=P.filter(p=>p.n.toLowerCase().includes(q)).slice(0,5);
   box.innerHTML = hits.length?'<div style="margin-top:7px">'+hits.map(p=>
     `<div class="prow" style="padding:7px 0;${d.has(p.n)?'opacity:.4':''}" onclick="pickSugg(${p.i})">
-       <div class="pmain"><div class="pname">${esc(p.n)}${p.risk?' <span class="flag">!</span>':""}${d.has(p.n)?' · gone':''}</div>
-       <div class="pmeta"><span class="tag ${p.p}">${p.p}</span>${p.t} · bye ${p.b}</div></div>
+       <div class="pmain"><div class="pname">${esc(p.n)}${p.risk?' <span class="flag">!</span>':""}</div>
+       <div class="pmeta"><span class="tag ${p.p}">${p.p}</span>${p.t} · bye ${p.b}${(()=>{const o=ownerOf(p.n);
+         return o?` · <span style="color:var(--stop)">gone → ${esc(o.tm)} $${o.$}</span>`:""})()}</div></div>
        <div class="pval num">$${expected(p)}</div></div>`).join("")+"</div>":"";
 }
 function pickSugg(i){
@@ -489,7 +528,9 @@ function verdict(){
   const rivals=CFG.teams.filter(t=>t!==ME()&&slotsLeft(t)>0&&maxBid(t)>=next)
                         .sort((a,b)=>maxBid(b)-maxBid(a));
   let cls,call,lines=[];
-  if(gone){cls="stop";call="Off the board";lines.push("Already drafted.")}
+  if(gone){cls="stop";call="Off the board";
+    const o=ownerOf(sel.n);
+    lines.push(o?`${o.keep?"Kept by":"Went to"} <b>${esc(o.tm)}</b> for <b>$${o.$}</b> · worth $${worth}`:"Already drafted.")}
   else if(next>cap){cls="stop";call="Can't";
     lines.push(`$${next} is past your $${cap} ceiling — you must keep $${CFG.min} for each of your other ${slotsLeft(ME())-1} slots.`)}
   else if(next<=Math.round(worth*0.8)){cls="go";call="Bargain"}
@@ -512,10 +553,10 @@ function verdict(){
   if(typed && typed!==bid) lines.unshift(`<span style="color:var(--hold)">$${typed} isn't a legal bid — read as $${bid}</span>`);
   const pct=Math.min(100,Math.round(next/Math.max(worth,1)*100));
   slab.className="slab "+cls;
-  slab.innerHTML=`<div class="call">${call}</div>
-    <div class="bar"><i style="width:${pct}%;background:var(--${cls})"></i></div>
-    <div class="barlab"><span>next $${next}</span><span>worth $${worth}</span></div>
-    <div class="sub">${lines.join("<br>")}</div>`;
+  slab.innerHTML=`<div class="call">${call}</div>`
+    + (gone ? "" : `<div class="bar"><i style="width:${pct}%;background:var(--${cls})"></i></div>
+    <div class="barlab"><span>next $${next}</span><span>worth $${worth}</span></div>`)
+    + `<div class="sub">${lines.join("<br>")}</div>`;
 }
 
 /* ---------- record ---------- */
@@ -528,10 +569,17 @@ function openSheet(i){
   document.getElementById("sh-teams").innerHTML=CFG.teams.map(t=>
     `<div class="pick" id="pk-${cssId(t)}" onclick="pickTeam(${JSON.stringify(t).replace(/"/g,'&quot;')})">${esc(t)}</div>`).join("");
   document.getElementById("veil").classList.add("on");
+  const pr=document.getElementById("sh-price");
+  setTimeout(()=>{pr.focus(); const v=pr.value; try{pr.setSelectionRange(v.length,v.length)}catch(e){}},60);
 }
 function pickTeam(t){
   pendTeam=t;
   CFG.teams.forEach(x=>{const e=document.getElementById("pk-"+cssId(x)); if(e)e.classList.toggle("on",x===t)});
+}
+function bump(dir){
+  const el=document.getElementById("sh-price");
+  el.value=Math.max(CFG.min, snap(+el.value||CFG.min)+dir*STEP());
+  el.focus(); const v=el.value; try{el.setSelectionRange(v.length,v.length)}catch(e){}
 }
 function closeSheet(){document.getElementById("veil").classList.remove("on");pending=null}
 function confirmDraft(){
@@ -546,6 +594,22 @@ function confirmDraft(){
   toast(pending.n+" → "+pendTeam+" $"+price);
   closeSheet(); save();
 }
+function watch(i){
+  const n=P[i].n, k=S.watch.indexOf(n);
+  if(k>=0){S.watch.splice(k,1); toast("Removed "+n)} else {S.watch.push(n); toast("Watching "+n)}
+  save();
+}
+const watched = n => S.watch.includes(n);
+
+function clearBid(){
+  sel=null;
+  document.getElementById("q-name").value="";
+  document.getElementById("q-bid").value="";
+  document.getElementById("q-sugg").innerHTML="";
+  verdict();
+  document.getElementById("q-name").focus();
+}
+
 function undo(){
   const last=[...S.picks].reverse().find(x=>!x.keep);
   if(!last)return toast("Nothing to undo");
@@ -652,29 +716,42 @@ function render(){
   document.getElementById("infl").textContent=
     (f>=1.03?"Prices running hot ":f<=0.97?"Bargains out there ":"Market is fair ")+"· "+f.toFixed(2)+"×";
 
-  const mine=S.picks.filter(x=>x.tm===me);
-  const objs=mine.map(x=>({...byName[x.n.toLowerCase()],$:x.$,raw:x.n})).filter(p=>p.n);
-  const pool=[...objs], used=new Set(); let rows="";
+  /* my own players stay separate from whichever roster is being viewed */
+  const objs=S.picks.filter(x=>x.tm===me)
+    .map(x=>({...byName[x.n.toLowerCase()],$:x.$,raw:x.n})).filter(p=>p.n);
+
+  const rt = (rosterView && S.teams[rosterView]) ? rosterView : me;
+  document.getElementById("rosterteam").innerHTML=CFG.teams.map(t=>
+    `<option value="${esc(t)}"${t===rt?" selected":""}>${esc(t===me?t+" (you)":t)}</option>`).join("");
+  const vObjs=S.picks.filter(x=>x.tm===rt)
+    .map(x=>({...byName[x.n.toLowerCase()],$:x.$,raw:x.n,keep:x.keep}))
+    .filter(p=>p.n);
+  const unknown=S.picks.filter(x=>x.tm===rt&&!byName[x.n.toLowerCase()]);
+  const pool=[...vObjs], used=new Set(); let rows="";
   CFG.lineup.forEach(([slot,n])=>{ for(let k=0;k<n;k++){
     const idx=pool.findIndex(p=>fitsSlot(p.p,slot));
     const f=idx>=0?pool.splice(idx,1)[0]:null;
     if(f)used.add(f.n);
     rows+=`<div class="slot"><span class="lb">${slot}</span>
-      <span class="fill${f?"":" empty"}">${f?esc(f.n)+' <span style="color:var(--dim);font-size:11px">bye '+f.b+'</span>':"open"}</span>
+      <span class="fill${f?"":" empty"}">${f?esc(f.n)+(f.keep?' <span class="kp">K</span>':"")+' <span style="color:var(--dim);font-size:11px">bye '+f.b+'</span>':"open"}</span>
       <span class="pr num">${f?"$"+f.$:""}</span></div>`;
   }});
   const startCount=CFG.lineup.reduce((s,[,n])=>s+n,0);
   for(let k=0;k<CFG.slots-startCount;k++){ const f=pool[k];
     rows+=`<div class="slot"><span class="lb">BN${k+1}</span>
-      <span class="fill${f?"":" empty"}">${f?esc(f.n)+' <span class="tag '+f.p+'">'+f.p+'</span>':"open"}</span>
+      <span class="fill${f?"":" empty"}">${f?esc(f.n)+(f.keep?' <span class="kp">K</span>':""):"open"}</span>
+      ${f?`<span class="bnmeta"><span class="tag ${f.p}">${f.p}</span>bye ${f.b}</span>`:""}
       <span class="pr num">${f?"$"+f.$:""}</span></div>`; }
+  if(unknown.length) rows+=`<div class="slot"><span class="lb">?</span>
+      <span class="fill">${unknown.map(x=>esc(x.n)).join(", ")}</span>
+      <span class="pr num">$${unknown.reduce((s,x)=>s+x.$,0)}</span></div>`;
   document.getElementById("roster").innerHTML=rows;
 
   const byes={};
-  objs.filter(p=>used.has(p.n)&&["QB","RB","WR","TE"].includes(p.p)).forEach(p=>byes[p.b]=(byes[p.b]||0)+1);
+  vObjs.filter(p=>used.has(p.n)&&["QB","RB","WR","TE"].includes(p.p)).forEach(p=>byes[p.b]=(byes[p.b]||0)+1);
   const bad=Object.entries(byes).filter(([,c])=>c>=2);
   document.getElementById("byewarn").innerHTML=bad.length
-    ?`<div class="warn">Bye stack: ${bad.map(([w,c])=>`Week ${w} takes out ${c} starters`).join(" · ")}</div>`:"";
+    ?`<div class="warn">${rt===me?"Bye stack":esc(rt)+" bye stack"}: ${bad.map(([w,c])=>`Week ${w} takes out ${c} starters`).join(" · ")}</div>`:"";
 
   const order=CFG.teams.map(t=>({t,mb:maxBid(t),sl:slotsLeft(t)})).sort((a,b)=>b.mb-a.mb);
   document.getElementById("league").innerHTML=order.map(o=>{
@@ -717,6 +794,7 @@ function render(){
               <div class="pval num" style="color:${i===0?"var(--amber)":"var(--text)"}">$${r.exp}</div>
               <div class="pmeta" style="margin:0">going rate</div>
             </div>
+            <button class="btn tiny star ${watched(p.n)?"on":""}" onclick="watch(${p.i})">${watched(p.n)?"★":"☆"}</button>
             <button class="btn tiny" onclick="openSheet(${p.i})">Sold</button>
           </div>
           <div class="recwhy">${why.join(" · ")}${r.tight?` · <span style="color:var(--hold)">stretches your budget</span>`:""}${p.risk?`<div style="color:var(--hold);margin-top:5px">! ${esc(p.risk)}</div>`:""}</div>
@@ -726,21 +804,83 @@ function render(){
   const q=document.getElementById("q-search").value.trim().toLowerCase();
   let list=avail();
   if(filter!=="ALL")list=list.filter(p=>p.p===filter);
+  if(nflFilter!=="ALL")list=list.filter(p=>p.t===nflFilter);
   if(q)list=list.filter(p=>p.n.toLowerCase().includes(q));
+  const nflTeams=[...new Set(P.map(p=>p.t))].sort();
+  document.getElementById("nflteam").innerHTML=
+    `<option value="ALL"${nflFilter==="ALL"?" selected":""}>All teams</option>`+
+    nflTeams.map(t=>{const n=avail().filter(p=>p.t===t).length;
+      return `<option value="${t}"${nflFilter===t?" selected":""}>${t} (${n})</option>`}).join("");
   list.sort((a,b)=>b.v-a.v);
   const cap=maxBid(me);
-  document.getElementById("pool").innerHTML=list.slice(0,60).map(p=>{
+  document.getElementById("pool").innerHTML=list.slice(0,nflFilter==="ALL"?60:200).map(p=>{
     const w=expected(p);
     return `<div class="prow">
       <div class="pmain" onclick="pickSugg(${p.i});scrollTo({top:0,behavior:'smooth'})">
         <div class="pname">${esc(p.n)}${p.risk?' <span class="flag">!</span>':""}</div>
         <div class="pmeta"><span class="tag ${p.p}">${p.p}</span>${p.t} · bye ${p.b}${p.hit?` · <span style="color:var(--stop)">was $${snap(p.full*inflation()*posInfo(p.p).heat)}</span>`:""}</div></div>
       <div class="pval num" style="${w>cap?"color:var(--dim)":""}">$${w}</div>
+      <button class="btn tiny star ${watched(p.n)?"on":""}" onclick="watch(${p.i})" title="Watch">${watched(p.n)?"★":"☆"}</button>
       <button class="btn tiny" onclick="openSheet(${p.i})">Sold</button></div>`;
   }).join("")||'<div class="hint" style="padding:14px 0">Nobody matches that.</div>';
 
   document.getElementById("tabs").innerHTML=["ALL","QB","RB","WR","TE","K","DEF"]
     .map(x=>`<button class="btn sm ${filter===x?"on":""}" onclick="filter='${x}';render()">${x}</button>`).join("");
+
+  /* ---- players grouped by NFL team ---- */
+  const byeOf={}; P.forEach(p=>byeOf[p.t]=p.b);
+  const mineByTeam={}, mineByBye={};
+  objs.forEach(p=>{ mineByTeam[p.t]=(mineByTeam[p.t]||0)+1;
+                    if(["QB","RB","WR","TE"].includes(p.p)) mineByBye[p.b]=(mineByBye[p.b]||0)+1; });
+  const groups={};
+  avail().forEach(p=>{(groups[p.t]=groups[p.t]||[]).push(p)});
+  let keys=Object.keys(groups);
+  if(teamSort==="bye")       keys.sort((a,b)=>byeOf[a]-byeOf[b]||a.localeCompare(b));
+  else if(teamSort==="mine") keys.sort((a,b)=>(mineByBye[byeOf[b]]||0)-(mineByBye[byeOf[a]]||0)
+                                            ||byeOf[a]-byeOf[b]||a.localeCompare(b));
+  else                       keys.sort((a,b)=>a.localeCompare(b));
+  ["ts-team","ts-bye","ts-mine"].forEach(id=>document.getElementById(id)
+    .classList.toggle("on",{ "ts-team":"team","ts-bye":"bye","ts-mine":"mine" }[id]===teamSort));
+  document.getElementById("teamhint").innerHTML = teamSort==="mine"
+    ? "Teams whose bye week already hits your starters, worst first — avoid stacking these."
+    : "Tap a team to see who's left. Useful for stacking a QB with his receiver, and for spotting bye clashes before you bid.";
+  document.getElementById("byteam").innerHTML = keys.map(t=>{
+    const g=groups[t].sort((a,b)=>b.v-a.v), bye=byeOf[t], clash=mineByBye[bye]||0;
+    const open = openTeam===t;
+    return `<div class="tgrp">
+      <div class="thead" onclick="openTeam=${open?"null":`'${t}'`};render()">
+        <span class="tabbr">${t}</span>
+        <span class="tbye${clash>=2?" bad":clash?" warn":""}">bye ${bye}${clash?` · ${clash} of mine`:""}</span>
+        <span class="tcount">${g.length} left${mineByTeam[t]?` · ${mineByTeam[t]} mine`:""}</span>
+        <span class="tchev">${open?"−":"+"}</span>
+      </div>
+      ${open?`<div class="tbody">${g.map(p=>`
+        <div class="prow" style="padding:7px 0">
+          <div class="pmain" onclick="pickSugg(${p.i});scrollTo({top:0,behavior:'smooth'})">
+            <div class="pname">${esc(p.n)}${p.risk?' <span class="flag">!</span>':""}</div>
+            <div class="pmeta"><span class="tag ${p.p}">${p.p}</span>${p.t}</div>
+          </div>
+          <div class="pval num">$${expected(p)}</div>
+          <button class="btn tiny star ${watched(p.n)?"on":""}" onclick="watch(${p.i})">${watched(p.n)?"★":"☆"}</button>
+          <button class="btn tiny" onclick="openSheet(${p.i})">Sold</button>
+        </div>`).join("")}</div>`:""}
+    </div>`;
+  }).join("");
+
+  const wl=S.watch.map(n=>byName[n.toLowerCase()]).filter(Boolean).sort((a,b)=>b.v-a.v);
+  document.getElementById("watch").innerHTML = wl.length
+    ? wl.map(p=>{const o=ownerOf(p.n);
+        return `<div class="prow" style="padding:8px 0">
+          <div class="pmain" onclick="pickSugg(${p.i});scrollTo({top:0,behavior:'smooth'})">
+            <div class="pname" style="${o?"opacity:.45;text-decoration:line-through":""}">${esc(p.n)}${p.risk?' <span class="flag">!</span>':""}</div>
+            <div class="pmeta"><span class="tag ${p.p}">${p.p}</span>${p.t} · bye ${p.b}${o?` · <span style="color:var(--stop)">${esc(o.tm)} $${o.$}</span>`:""}</div>
+          </div>
+          <div class="pval num" style="${o?"color:var(--dim)":""}">$${expected(p)}</div>
+          <button class="btn tiny star on" onclick="watch(${p.i})">★</button>
+          ${o?"":`<button class="btn tiny" onclick="openSheet(${p.i})">Sold</button>`}
+        </div>`}).join("")
+      + `<div class="hint" style="padding-top:8px">${wl.filter(p=>!ownerOf(p.n)).length} of ${wl.length} still available</div>`
+    : '<div class="hint">Tap ☆ next to any player to keep an eye on him here.</div>';
 
   const live=S.picks.filter(x=>!x.keep).slice().reverse();
   document.getElementById("log").innerHTML=live.length
@@ -766,6 +906,11 @@ let tmr; function toast(m){const t=document.getElementById("toast");t.textConten
 document.getElementById("q-name").addEventListener("input",()=>{sel=null;suggest();verdict()});
 document.getElementById("q-bid").addEventListener("input",verdict);
 document.getElementById("q-search").addEventListener("input",render);
+document.getElementById("nflteam").addEventListener("change",e=>{nflFilter=e.target.value;render()});
+document.getElementById("rosterteam").addEventListener("change",e=>{rosterView=e.target.value;render()});
+document.getElementById("sh-price").addEventListener("focus",e=>{
+  const v=e.target.value; e.target.setSelectionRange(v.length,v.length);   // caret at the end
+});
 render();
 </script>
 </body></html>

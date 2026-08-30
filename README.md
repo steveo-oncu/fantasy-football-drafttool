@@ -24,6 +24,15 @@ a live draft.
   live inflation, then adjusted again for positional scarcity in this specific league.
 - **Roster and byes** — starters slot automatically, flex included, with a warning when
   a single bye week would take out two or more of your starters.
+- **By NFL team** — everyone still available grouped by their real team, sorted
+  alphabetically, by bye week, or by which byes already hit your starters hardest. Use
+  it to stack a quarterback with his receiver, and to see a bye clash before you bid
+  rather than in October.
+- **Watch list** — tap the star beside any player to park him in a panel of your own.
+  Watched players who get bought are struck through and show who took them.
+- **Every roster, not just yours** — the roster panel has a team selector, so you can
+  check anyone's lineup, bench and bye clashes without leaving the page. Keepers are
+  marked K. Bench rows show position and bye week.
 - **Undo and backup** — one tap to reverse a mis-tap, and a JSON export so a browser
   clearing its storage mid-draft doesn't cost you the day.
 
