@@ -142,6 +142,25 @@ textarea.fld{min-height:104px;font-size:13px;line-height:1.6;resize:vertical;
   background:var(--amber);color:#160E00;padding:11px 18px;border-radius:99px;font-weight:700;font-size:13.5px;
   z-index:80;opacity:0;pointer-events:none;transition:opacity .2s;white-space:nowrap}
 .toast.on{opacity:1}
+#report{display:none}
+@media print{
+  html,body{background:#fff!important;color:#111!important}
+  body>*{display:none!important}
+  #report{display:block!important;background:#fff;color:#111;font:12px/1.5 -apple-system,Helvetica,sans-serif;padding:0}
+  #report h1{font-size:19px;margin:0 0 2px}
+  #report .meta{color:#555;font-size:11px;margin-bottom:16px}
+  #report h2{font-size:13px;margin:18px 0 6px;padding-bottom:3px;border-bottom:1.5px solid #111;
+    text-transform:uppercase;letter-spacing:.06em}
+  #report table{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:6px}
+  #report th{text-align:left;border-bottom:1px solid #999;padding:3px 5px;font-size:10px;
+    text-transform:uppercase;letter-spacing:.05em;color:#444}
+  #report td{padding:3px 5px;border-bottom:1px solid #e2e2e2}
+  #report td.n,#report th.n{text-align:right}
+  #report .team{break-inside:avoid;page-break-inside:avoid;margin-bottom:14px}
+  #report .tt{font-weight:700;font-size:12.5px;margin-bottom:3px}
+  #report .sm{color:#666;font-size:10px;font-weight:400}
+  @page{margin:14mm}
+}
 .foot{text-align:center;color:#4A5870;font-size:10.5px;padding:14px 0 0;line-height:1.7}
 
 @media(max-width:820px){
@@ -243,6 +262,13 @@ textarea.fld{min-height:104px;font-size:13px;line-height:1.6;resize:vertical;
       <button class="btn sm" onclick="restore()">Load backup</button>
       <button class="btn sm" onclick="wipe()">Reset draft</button>
     </div>
+    <div class="lab" style="margin:14px 0 5px">Export results</div>
+    <div class="rowf">
+      <button class="btn sm" onclick="exportCSV()">CSV</button>
+      <button class="btn sm" onclick="exportPDF()">PDF</button>
+      <button class="btn sm" onclick="copySummary()">Copy text</button>
+    </div>
+    <div class="hint" style="margin-top:6px">PDF opens your print dialog — choose Save to Files.</div>
   </section>
 </aside>
 </div>
@@ -294,6 +320,7 @@ textarea.fld{min-height:104px;font-size:13px;line-height:1.6;resize:vertical;
   </div>
 </div>
 
+<div id="report"></div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -608,6 +635,112 @@ function clearBid(){
   document.getElementById("q-sugg").innerHTML="";
   verdict();
   document.getElementById("q-name").focus();
+}
+
+/* ---------- exports ---------- */
+function download(text, name, mime){
+  const blob=new Blob([text],{type:mime+";charset=utf-8"});
+  const url=URL.createObjectURL(blob), a=document.createElement("a");
+  a.href=url; a.download=name; document.body.appendChild(a); a.click();
+  setTimeout(()=>{document.body.removeChild(a); URL.revokeObjectURL(url)},1500);
+}
+const cell = v => { const t=String(v??"");
+  return /[",\r\n]/.test(t) ? '"'+t.replace(/"/g,'""')+'"' : t; };
+const stamp = () => new Date().toISOString().slice(0,10);
+
+function exportCSV(){
+  const head=["Order","Player","Pos","NFL","Bye","Drafted by","Price","Going rate","Over/under","Keeper"];
+  const rows=S.picks.map((x,i)=>{
+    const p=byName[x.n.toLowerCase()];
+    const w=p?expected(p):"";
+    return [i+1,x.n,p?p.p:"",p?p.t:"",p?p.b:"",x.tm,x.$,w,w!==""?w-x.$:"",x.keep?"Y":""];
+  });
+  download([head,...rows].map(r=>r.map(cell).join(",")).join("\r\n"),
+           `${CFG.name.toLowerCase().replace(/\W+/g,"-")}-draft-${stamp()}.csv`,"text/csv");
+  toast(`Exported ${rows.length} picks`);
+}
+
+function buildReport(){
+  const me=ME();
+  const money = t => `$${S.teams[t].cash} left of $${CFG.budget}`;
+  const teamBlock = t => {
+    const roster=S.picks.filter(x=>x.tm===t)
+      .map(x=>({...byName[x.n.toLowerCase()],$:x.$,keep:x.keep,raw:x.n}));
+    const pool=[...roster].filter(p=>p.n), rows=[];
+    CFG.lineup.forEach(([slot,n])=>{ for(let k=0;k<n;k++){
+      const i=pool.findIndex(p=>fitsSlot(p.p,slot));
+      rows.push([slot, i>=0?pool.splice(i,1)[0]:null]);
+    }});
+    const starters=CFG.lineup.reduce((s,[,n])=>s+n,0);
+    const bench=CFG.slots-starters;
+    for(let k=0;k<bench;k++){ if(!pool[k]) break; rows.push(["BN"+(k+1), pool[k]]); }
+    const benchOpen=bench-Math.min(bench,pool.filter(Boolean).length);
+    const spent=roster.reduce((s,p)=>s+p.$,0);
+    const byes={}; rows.slice(0,starters).forEach(([,p])=>{ if(p&&["QB","RB","WR","TE"].includes(p.p)) byes[p.b]=(byes[p.b]||0)+1 });
+    const stack=Object.entries(byes).filter(([,c])=>c>=2).map(([w,c])=>`Wk ${w}: ${c}`).join(", ");
+    return `<div class="team">
+      <div class="tt">${esc(t)}${t===me?" (you)":""}
+        <span class="sm">— spent $${spent}, ${money(t)}${stack?` · bye stack ${stack}`:""}</span></div>
+      <table><tr><th style="width:52px">Slot</th><th>Player</th><th style="width:38px">Pos</th>
+        <th style="width:44px">NFL</th><th class="n" style="width:38px">Bye</th><th class="n" style="width:52px">Price</th></tr>
+        ${rows.map(([slot,p])=>`<tr><td>${slot}</td>
+          <td>${p?esc(p.n)+(p.keep?" (K)":""):"<i style='color:#aaa'>open</i>"}</td>
+          <td>${p?p.p:""}</td><td>${p?p.t:""}</td>
+          <td class="n">${p?p.b:""}</td><td class="n">${p?"$"+p.$:""}</td></tr>`).join("")}
+        ${benchOpen>0?`<tr><td colspan="6" style="color:#aaa;font-style:italic">${benchOpen} bench spot${benchOpen>1?"s":""} open</td></tr>`:""}
+      </table></div>`;
+  };
+  const live=S.picks.filter(x=>!x.keep);
+  const lineup=CFG.lineup.filter(([,n])=>n>0).map(([s,n])=>n>1?n+" "+s:s).join(" / ");
+  document.getElementById("report").innerHTML=`
+    <h1>Auction draft results</h1>
+    <div class="meta">${CFG.teams.length} teams · $${CFG.budget} · $${CFG.min} minimum · ${CFG.slots} spots · ${esc(lineup)}
+      · ${live.length} players bought, ${S.picks.length-live.length} keepers · printed ${new Date().toLocaleString()}</div>
+    <h2>Rosters</h2>
+    ${CFG.teams.map(teamBlock).join("")}
+    <h2>Money</h2>
+    <table><tr><th>Team</th><th class="n">Spent</th><th class="n">Left</th><th class="n">Slots open</th><th class="n">Max bid</th></tr>
+      ${CFG.teams.map(t=>`<tr><td>${esc(t)}${t===me?" (you)":""}</td>
+        <td class="n">$${CFG.budget-S.teams[t].cash}</td><td class="n">$${S.teams[t].cash}</td>
+        <td class="n">${slotsLeft(t)}</td><td class="n">$${maxBid(t)}</td></tr>`).join("")}
+    </table>
+    <h2>Every pick in order</h2>
+    <table><tr><th class="n" style="width:28px">#</th><th>Player</th><th style="width:38px">Pos</th>
+      <th>Drafted by</th><th class="n" style="width:52px">Price</th><th class="n" style="width:60px">Going rate</th></tr>
+      ${S.picks.map((x,i)=>{const p=byName[x.n.toLowerCase()];
+        return `<tr><td class="n">${i+1}</td><td>${esc(x.n)}${x.keep?" (K)":""}</td>
+          <td>${p?p.p:""}</td><td>${esc(x.tm)}</td>
+          <td class="n">$${x.$}</td><td class="n">${p?"$"+expected(p):""}</td></tr>`}).join("")}
+    </table>`;
+}
+function exportPDF(){
+  if(!S.picks.length) return toast("Nothing to export yet");
+  buildReport();
+  setTimeout(()=>window.print(),120);
+}
+function copySummary(){
+  const me=ME();
+  const lines=[`${CFG.name} — auction results`,""];
+  CFG.teams.forEach(t=>{
+    const r=S.picks.filter(x=>x.tm===t);
+    lines.push(`${t}${t===me?" (you)":""} — $${CFG.budget-S.teams[t].cash} spent, $${S.teams[t].cash} left`);
+    r.forEach(x=>{const p=byName[x.n.toLowerCase()];
+      lines.push(`  ${p?p.p:"--"}  ${x.n}  $${x.$}${x.keep?" (K)":""}`)});
+    lines.push("");
+  });
+  const text=lines.join("\n");
+  const done=()=>toast("Copied to clipboard");
+  if(navigator.clipboard&&window.isSecureContext){
+    navigator.clipboard.writeText(text).then(done,()=>fallbackCopy(text,done));
+  } else fallbackCopy(text,done);
+}
+function fallbackCopy(text,done){
+  const ta=document.createElement("textarea");
+  ta.value=text; ta.style.cssText="position:fixed;left:-9999px";
+  document.body.appendChild(ta); ta.select();
+  try{ document.execCommand("copy"); done() }
+  catch(e){ toast("Couldn't copy — use CSV instead") }
+  document.body.removeChild(ta);
 }
 
 function undo(){

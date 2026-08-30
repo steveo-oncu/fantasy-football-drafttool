@@ -35,6 +35,9 @@ a live draft.
   marked K. Bench rows show position and bye week.
 - **Undo and backup** — one tap to reverse a mis-tap, and a JSON export so a browser
   clearing its storage mid-draft doesn't cost you the day.
+- **Export** — CSV of every pick with price against going rate, a printable report of
+  all rosters and money, or a plain-text summary on the clipboard for pasting into a
+  group chat.
 
 ## The league
 
@@ -62,6 +65,21 @@ shown alongside so you can see what was taken off.
 These notes were checked on 29 August 2026 and are a snapshot, not a feed. Re-check
 anything flagged on the morning of the draft — suspension rulings in particular can
 land at any time. The list lives in the `RISK` object near the top of the script.
+
+## Exporting results
+
+Three buttons under the draft log:
+
+- **CSV** — one row per pick with position, NFL team, bye, buyer, price, going rate and
+  the difference between the two, so you can sort by who overpaid.
+- **PDF** — builds a print-only report and opens the print dialog. On an iPad choose the
+  share icon, then Save to Files. Covers every roster laid out by slot with keepers
+  marked and bye stacks noted, a money table, and every pick in order. Empty bench rows
+  are collapsed so a half-finished draft does not print pages of blanks.
+- **Copy text** — a plain-text roster summary on the clipboard.
+
+Backup, further up the same card, is different: it saves machine-readable JSON for
+restoring a draft in progress, not a record to read.
 
 ## Bid increments
 
