@@ -95,6 +95,8 @@ textarea.fld{min-height:104px;font-size:13px;line-height:1.6;resize:vertical;
 .tm.me{background:#1A1305;margin:0 -13px;padding:7px 13px;border-bottom-color:#2E2409}
 .tm.me .mb{color:var(--amber)}
 .tm.threat .mb{color:#FF9AA5}
+.tm.clock{background:#04211A;margin:0 -13px;padding:7px 13px}
+.tm.clock .mb{color:var(--go)}
 
 .slot{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);font-size:13px}
 .slot:last-child{border-bottom:0}
@@ -199,7 +201,8 @@ textarea.fld{min-height:104px;font-size:13px;line-height:1.6;resize:vertical;
     <div class="rowf">
       <input id="q-name" class="fld" placeholder="Player" autocomplete="off" autocorrect="off" spellcheck="false">
       <input id="q-bid" class="fld num" type="number" inputmode="numeric" min="5" step="5" placeholder="$" style="max-width:92px">
-      <button class="btn" onclick="clearBid()" title="Clear" style="padding:11px 15px">✕</button>
+      <button class="btn" onclick="soldFromCheck()" id="q-sold" title="Record sale" style="padding:11px 14px;font-weight:700">Sold</button>
+      <button class="btn" onclick="clearBid()" title="Clear" style="padding:11px 14px">✕</button>
     </div>
     <div id="q-sugg"></div>
     <div id="slab" class="slab"><div class="call" style="font-size:19px;color:var(--dim)">Type a name</div>
@@ -207,7 +210,7 @@ textarea.fld{min-height:104px;font-size:13px;line-height:1.6;resize:vertical;
   </section>
 
   <section class="card">
-    <h2>Next target</h2>
+    <h2 id="rechead">Next target</h2>
     <div class="tabs" id="rectabs"></div>
     <div id="recs"></div>
   </section>
@@ -241,9 +244,9 @@ textarea.fld{min-height:104px;font-size:13px;line-height:1.6;resize:vertical;
   </section>
 
   <section class="card">
-    <h2>Who can outbid me</h2>
+    <h2 id="leaguehead">Who can outbid me</h2>
     <div id="league"></div>
-    <div class="hint" style="margin-top:9px">Max bid = that team's cash minus the minimum held back for each empty slot after this one.</div>
+    <div class="hint" id="leaguehint" style="margin-top:9px"></div>
   </section>
 
   <section class="card">
@@ -281,14 +284,15 @@ textarea.fld{min-height:104px;font-size:13px;line-height:1.6;resize:vertical;
   <div class="sheet">
     <h3 id="sh-name">—</h3>
     <div class="hint" id="sh-meta">—</div>
-    <div class="hint" style="margin-top:12px;color:var(--text)">Who won him?</div>
+    <div class="hint" id="sh-title" style="margin-top:12px;color:var(--text)">Winning price</div>
     <div class="grid2" id="sh-teams"></div>
+    <div id="sh-pricebox">
     <div class="hint" style="color:var(--text)">Winning price</div>
     <div class="rowf" style="margin-top:6px">
       <button class="btn" onclick="bump(-1)" style="min-width:52px">−</button>
       <input id="sh-price" class="fld num" type="text" inputmode="numeric" pattern="[0-9]*" style="text-align:center">
       <button class="btn" onclick="bump(1)" style="min-width:52px">+</button>
-    </div>
+    </div></div>
     <div class="rowf" style="margin-top:12px">
       <button class="btn amber" style="flex:1" onclick="confirmDraft()">Record</button>
       <button class="btn" onclick="closeSheet()">Cancel</button>
@@ -301,6 +305,25 @@ textarea.fld{min-height:104px;font-size:13px;line-height:1.6;resize:vertical;
   <div class="sheet tall">
     <h3>Fix league details</h3>
     <div class="hint">10 teams · $600 · $5 minimum · 15 spots. Edits here keep every pick you've already recorded.</div>
+
+    <div class="lab">Draft type</div>
+    <div class="grid2" style="margin:0 0 4px">
+      <div class="pick" id="md-auction" onclick="pickMode('auction')">Auction</div>
+      <div class="pick" id="md-snake" onclick="pickMode('snake')">Snake / live</div>
+    </div>
+    <div id="c-auctionbox">
+      <div class="lab">Auction budget</div>
+      <div class="lineup" style="grid-template-columns:1fr 1fr">
+        <div><label>Budget per team</label><input id="c-budget" class="fld num" type="number" inputmode="numeric" min="1"></div>
+        <div><label>Minimum bid / increment</label><input id="c-min" class="fld num" type="number" inputmode="numeric" min="1"></div>
+      </div>
+      <div class="hint" id="c-budgethint" style="margin-top:6px"></div>
+    </div>
+    <div id="c-snakebox">
+      <div class="lab">Draft order — one per line, first pick first</div>
+      <textarea id="c-order" class="fld" spellcheck="false" style="min-height:132px"></textarea>
+      <div class="hint" id="c-orderhint" style="margin-top:6px"></div>
+    </div>
 
     <div class="lab">Starting lineup</div>
     <div class="lineup" id="c-lineup"></div>
@@ -328,7 +351,7 @@ textarea.fld{min-height:104px;font-size:13px;line-height:1.6;resize:vertical;
    18 roster spots, $1 minimum. Stored raw and rescaled to the configured league. */
 const SRC = [["Puka Nacua", "WR", "LAR", 11, 52], ["Jahmyr Gibbs", "RB", "DET", 6, 51], ["Bijan Robinson", "RB", "ATL", 11, 51], ["Ja'Marr Chase", "WR", "CIN", 6, 51], ["Jaxon Smith-Njigba", "WR", "SEA", 11, 48], ["Amon-Ra St. Brown", "WR", "DET", 6, 46], ["Christian McCaffrey", "RB", "SF", 8, 43], ["Jonathan Taylor", "RB", "IND", 13, 38], ["Drake London", "WR", "ATL", 11, 38], ["Justin Jefferson", "WR", "MIN", 6, 34], ["CeeDee Lamb", "WR", "DAL", 14, 34], ["James Cook", "RB", "BUF", 7, 33], ["Chris Olave", "WR", "NO", 8, 33], ["Omarion Hampton", "RB", "LAC", 7, 30], ["Saquon Barkley", "RB", "PHI", 10, 30], ["Rashee Rice", "WR", "KC", 5, 30], ["Nico Collins", "WR", "HOU", 8, 30], ["Ashton Jeanty", "RB", "LV", 13, 29], ["Chase Brown", "RB", "CIN", 6, 29], ["A.J. Brown", "WR", "NE", 11, 29], ["De'Von Achane", "RB", "MIA", 6, 28], ["Garrett Wilson", "WR", "NYJ", 13, 28], ["Brock Bowers", "TE", "LV", 13, 28], ["Kenneth Walker", "RB", "KC", 5, 27], ["Josh Allen", "QB", "BUF", 7, 26], ["Derrick Henry", "RB", "BAL", 13, 26], ["George Pickens", "WR", "DAL", 14, 26], ["DeVonta Smith", "WR", "PHI", 10, 26], ["Trey McBride", "TE", "ARI", 14, 26], ["Jeremiyah Love", "RB", "ARI", 14, 25], ["Breece Hall", "RB", "NYJ", 13, 25], ["Zay Flowers", "WR", "BAL", 13, 25], ["Kyren Williams", "RB", "LAR", 11, 24], ["Josh Jacobs", "RB", "GB", 11, 23], ["Malik Nabers", "WR", "NYG", 8, 23], ["Cam Skattebo", "RB", "NYG", 8, 22], ["Emeka Egbuka", "WR", "TB", 10, 22], ["Tetairoa McMillan", "WR", "CAR", 5, 22], ["Javonte Williams", "RB", "DAL", 14, 21], ["Davante Adams", "WR", "LAR", 11, 21], ["Jameson Williams", "WR", "DET", 6, 21], ["Bucky Irving", "RB", "TB", 10, 20], ["Ladd McConkey", "WR", "LAC", 7, 19], ["Jaylen Waddle", "WR", "DEN", 10, 19], ["Travis Etienne", "RB", "NO", 8, 18], ["D'Andre Swift", "RB", "CHI", 10, 18], ["Tee Higgins", "WR", "CIN", 6, 18], ["Christian Watson", "WR", "GB", 11, 17], ["D.J. Moore", "WR", "BUF", 7, 17], ["Mike Evans", "WR", "SF", 8, 17], ["Rome Odunze", "WR", "CHI", 10, 17], ["Luther Burden III", "WR", "CHI", 10, 17], ["Bhayshul Tuten", "RB", "JAC", 7, 16], ["Terry McLaurin", "WR", "WAS", 7, 16], ["DK Metcalf", "WR", "PIT", 9, 16], ["Colston Loveland", "TE", "CHI", 10, 16], ["Quinshon Judkins", "RB", "CLE", 11, 15], ["Marvin Harrison Jr.", "WR", "ARI", 14, 14], ["Tyler Warren", "TE", "IND", 13, 14], ["Drake Maye", "QB", "NE", 11, 13], ["Lamar Jackson", "QB", "BAL", 13, 13], ["Jalen Hurts", "QB", "PHI", 10, 13], ["David Montgomery", "RB", "HOU", 8, 13], ["Michael Pittman Jr.", "WR", "PIT", 9, 13], ["Harold Fannin Jr.", "TE", "CLE", 11, 13], ["Joe Burrow", "QB", "CIN", 6, 12], ["TreVeyon Henderson", "RB", "NE", 11, 12], ["Jaylen Warren", "RB", "PIT", 9, 12], ["Tony Pollard", "RB", "TEN", 9, 12], ["Courtland Sutton", "WR", "DEN", 10, 12], ["Jayden Reed", "WR", "GB", 11, 12], ["Alec Pierce", "WR", "IND", 13, 12], ["Jadarian Price", "RB", "SEA", 11, 11], ["Rhamondre Stevenson", "RB", "NE", 11, 11], ["Chuba Hubbard", "RB", "CAR", 5, 11], ["J.K. Dobbins", "RB", "DEN", 10, 11], ["Carnell Tate", "WR", "TEN", 9, 11], ["Kyle Pitts", "TE", "ATL", 11, 11], ["Rachaad White", "RB", "WAS", 7, 10], ["Jakobi Meyers", "WR", "JAC", 7, 10], ["Chris Godwin", "WR", "TB", 10, 10], ["Parker Washington", "WR", "JAC", 7, 10], ["Travis Kelce", "TE", "KC", 5, 10], ["Jayden Daniels", "QB", "WAS", 7, 9], ["Caleb Williams", "QB", "CHI", 10, 9], ["Rico Dowdle", "RB", "PIT", 9, 9], ["Jonathon Brooks", "RB", "CAR", 5, 9], ["RJ Harvey", "RB", "DEN", 10, 9], ["Wan'Dale Robinson", "WR", "TEN", 9, 9], ["Michael Wilson", "WR", "ARI", 14, 9], ["Brian Thomas Jr.", "WR", "JAC", 7, 9], ["Xavier Worthy", "WR", "KC", 5, 9], ["Khalil Shakir", "WR", "BUF", 7, 9], ["Romeo Doubs", "WR", "NE", 11, 9], ["Stefon Diggs", "WR", "WAS", 7, 9], ["Sam LaPorta", "TE", "DET", 6, 9], ["Mark Andrews", "TE", "BAL", 13, 9], ["Dak Prescott", "QB", "DAL", 14, 8], ["Aaron Jones", "RB", "MIN", 6, 8], ["Kenneth Gainwell", "RB", "TB", 10, 8], ["Josh Downs", "WR", "IND", 13, 8], ["Jordan Addison", "WR", "MIN", 6, 8], ["Quentin Johnston", "WR", "LAC", 7, 8], ["Bo Nix", "QB", "DEN", 10, 7], ["Justin Herbert", "QB", "LAC", 7, 7], ["Brock Purdy", "QB", "SF", 8, 7], ["Jacory Croskey-Merritt", "RB", "WAS", 7, 7], ["Blake Corum", "RB", "LAR", 11, 7], ["Matthew Golden", "WR", "GB", 11, 7], ["KC Concepcion", "WR", "CLE", 11, 7], ["De'Zhaun Stribling", "WR", "SF", 8, 7], ["Tucker Kraft", "TE", "GB", 11, 7], ["Jaxson Dart", "QB", "NYG", 8, 6], ["Jared Goff", "QB", "DET", 6, 6], ["Kyle Monangai", "RB", "CHI", 10, 6], ["Jordan Mason", "RB", "MIN", 6, 6], ["Alvin Kamara", "RB", "NO", 8, 6], ["Woody Marks", "RB", "HOU", 8, 6], ["Makai Lemon", "WR", "PHI", 10, 6], ["Rashid Shaheed", "WR", "SEA", 11, 6], ["Deebo Samuel", "WR", "SF", 8, 6], ["Jordyn Tyson", "WR", "NO", 8, 6], ["Jake Ferguson", "TE", "DAL", 14, 6], ["Trevor Lawrence", "QB", "JAC", 7, 5], ["Matthew Stafford", "QB", "LAR", 11, 5], ["Zach Charbonnet", "RB", "SEA", 11, 5], ["Tyjae Spears", "RB", "TEN", 9, 5], ["Dylan Sampson", "RB", "CLE", 11, 5], ["Chris Rodriguez Jr.", "RB", "JAC", 7, 5], ["Tyrone Tracy Jr.", "RB", "NYG", 8, 5], ["Jerry Jeudy", "WR", "CLE", 11, 5], ["Keenan Allen", "WR", "IND", 13, 5], ["Tre Tucker", "WR", "LV", 13, 5], ["Jalen Coker", "WR", "CAR", 5, 5], ["Jalen McMillan", "WR", "TB", 10, 5], ["Dallas Goedert", "TE", "PHI", 10, 5], ["George Kittle", "TE", "SF", 8, 5], ["Dalton Schultz", "TE", "HOU", 8, 5], ["Isiah Pacheco", "RB", "DET", 6, 4], ["Rashod Bateman", "WR", "BAL", 13, 4], ["Calvin Ridley", "WR", "TEN", 9, 4], ["Adonai Mitchell", "WR", "NYJ", 13, 4], ["Germie Bernard", "WR", "PIT", 9, 4], ["Jalen Nailor", "WR", "LV", 13, 4], ["Dalton Kincaid", "TE", "BUF", 7, 4], ["Patrick Mahomes", "QB", "KC", 5, 3], ["Tyler Shough", "QB", "NO", 8, 3], ["Brian Robinson Jr.", "RB", "ATL", 11, 3], ["Justice Hill", "RB", "BAL", 13, 3], ["Tyler Allgeier", "RB", "ARI", 14, 3], ["Keaton Mitchell", "RB", "LAC", 7, 3], ["Braelon Allen", "RB", "NYJ", 13, 3], ["Tank Bigsby", "RB", "PHI", 10, 3], ["Ray Davis", "RB", "BUF", 7, 3], ["Malik Washington", "WR", "MIA", 6, 3], ["Ryan Flournoy", "WR", "DAL", 14, 3], ["Jauan Jennings", "WR", "MIN", 6, 3], ["Denzel Boston", "WR", "CLE", 11, 3], ["Caleb Douglas", "WR", "MIA", 6, 3], ["Xavier Hutchinson", "WR", "HOU", 8, 3], ["Isaac TeSlaa", "WR", "DET", 6, 3], ["Hunter Henry", "TE", "NE", 11, 3], ["Isaiah Likely", "TE", "NYG", 8, 3], ["Juwan Johnson", "TE", "NO", 8, 3], ["Kyler Murray", "QB", "MIN", 6, 2], ["Malik Willis", "QB", "MIA", 6, 2], ["Sam Darnold", "QB", "SEA", 11, 2], ["MarShawn Lloyd", "RB", "GB", 11, 2], ["Samaje Perine", "RB", "CIN", 6, 2], ["George Holani", "RB", "SEA", 11, 2], ["Kimani Vidal", "RB", "LAC", 7, 2], ["Travis Hunter", "WR", "JAC", 7, 2], ["Devaughn Vele", "WR", "NO", 8, 2], ["Pat Freiermuth", "TE", "PIT", 9, 2], ["Greg Dulcich", "TE", "MIA", 6, 2], ["Denver D/ST", "DEF", "DEN", 10, 2], ["Houston D/ST", "DEF", "HOU", 8, 2], ["Baker Mayfield", "QB", "TB", 10, 1], ["Jordan Love", "QB", "GB", 11, 1], ["Xavier Legette", "WR", "CAR", 5, 1], ["Ty Johnson", "RB", "BUF", 7, 1], ["Brenton Strange", "TE", "JAC", 7, 1], ["Brandon Aubrey", "K", "DAL", 14, 1], ["Mike Washington Jr.", "RB", "LV", 13, 1], ["Jonah Coleman", "RB", "DEN", 10, 1], ["Cooper Kupp", "WR", "SEA", 11, 1], ["Darius Slayton", "WR", "NYG", 8, 1], ["Jaylin Noel", "WR", "HOU", 8, 1], ["Jaydon Blue", "RB", "DAL", 14, 1], ["Cameron Dicker", "K", "LAC", 7, 1], ["Seattle D/ST", "DEF", "SEA", 11, 1], ["Sean Tucker", "RB", "TB", 10, 1], ["Tre Harris", "WR", "LAC", 7, 1], ["Pat Bryant", "WR", "DEN", 10, 1], ["Omar Cooper Jr.", "WR", "NYJ", 13, 1], ["Emari Demercado", "RB", "KC", 5, 1], ["Minnesota D/ST", "DEF", "MIN", 6, 1], ["Tyquan Thornton", "WR", "KC", 5, 1], ["Ja'Kobi Lane", "WR", "BAL", 13, 1], ["Pittsburgh D/ST", "DEF", "PIT", 9, 1], ["Los Angeles Rams D/ST", "DEF", "LAR", 11, 1], ["Los Angeles Chargers D/ST", "DEF", "LAC", 7, 1], ["Philadelphia D/ST", "DEF", "PHI", 10, 1], ["New England D/ST", "DEF", "NE", 11, 1], ["Detroit D/ST", "DEF", "DET", 6, 1], ["Buffalo D/ST", "DEF", "BUF", 7, 1], ["Jacksonville D/ST", "DEF", "JAC", 7, 1], ["Ka'imi Fairbairn", "K", "HOU", 8, 1], ["Jason Myers", "K", "SEA", 11, 1], ["Wil Lutz", "K", "DEN", 10, 1], ["Chase McLaughlin", "K", "TB", 10, 1], ["Harrison Butker", "K", "KC", 5, 1], ["Eddy Pineiro", "K", "SF", 8, 1], ["Tyler Loop", "K", "BAL", 13, 1], ["Jake Bates", "K", "DET", 6, 1], ["Cam Little", "K", "JAC", 7, 1], ["Will Reichard", "K", "MIN", 6, 1]];
 const SRC_TEAMS=12, SRC_BUDGET=200, SRC_SLOTS=18, SRC_MIN=1;
-const DEFAULT_CFG = {"name": "Draft", "budget": 600, "min": 5, "slots": 15, "lineup": [["QB", 1], ["RB", 2], ["WR", 2], ["TE", 1], ["FLEX", 1], ["K", 1], ["DEF", 1]], "teams": ["Me", "Cliff", "David", "Miller", "Arlie", "Rick", "Bob", "Jimmy", "Dan", "Gary"], "keepers": [["Cliff", "Amon-Ra St. Brown", 145], ["Cliff", "Jared Goff", 25], ["David", "Ja'Marr Chase", 160], ["David", "Jaxon Smith-Njigba", 75], ["Miller", "Kenneth Walker", 100], ["Miller", "Omarion Hampton", 95], ["Arlie", "Tucker Kraft", 20], ["Arlie", "Javonte Williams", 15], ["Rick", "Jayden Daniels", 75], ["Bob", "Harold Fannin Jr.", 25], ["Bob", "Chris Olave", 25], ["Jimmy", "Dak Prescott", 25], ["Jimmy", "Brock Bowers", 15], ["Dan", "Justin Herbert", 30], ["Dan", "Dalton Kincaid", 25], ["Gary", "Drake Maye", 10], ["Gary", "George Pickens", 25]]};
+const DEFAULT_CFG = {"name": "Draft", "mode": "auction", "budget": 600, "min": 5, "slots": 15, "order": ["Me", "Cliff", "David", "Miller", "Arlie", "Rick", "Bob", "Jimmy", "Dan", "Gary"], "lineup": [["QB", 1], ["RB", 2], ["WR", 2], ["TE", 1], ["FLEX", 1], ["K", 1], ["DEF", 1]], "teams": ["Me", "Cliff", "David", "Miller", "Arlie", "Rick", "Bob", "Jimmy", "Dan", "Gary"], "keepers": [["Cliff", "Amon-Ra St. Brown", 145], ["Cliff", "Jared Goff", 25], ["David", "Ja'Marr Chase", 160], ["David", "Jaxon Smith-Njigba", 75], ["Miller", "Kenneth Walker", 100], ["Miller", "Omarion Hampton", 95], ["Arlie", "Tucker Kraft", 20], ["Arlie", "Javonte Williams", 15], ["Rick", "Jayden Daniels", 75], ["Bob", "Harold Fannin Jr.", 25], ["Bob", "Chris Olave", 25], ["Jimmy", "Dak Prescott", 25], ["Jimmy", "Brock Bowers", 15], ["Dan", "Justin Herbert", 30], ["Dan", "Dalton Kincaid", 25], ["Gary", "Drake Maye", 10], ["Gary", "George Pickens", 25]]};
 const CFG_KEY="draftboard.cfg.v2", KEY="draftboard.state.v2";
 const POSMAP = {FLEX:["RB","WR","TE"]};
 
@@ -394,14 +417,37 @@ const floorStep = n => Math.max(CFG.min, Math.floor(n/STEP())*STEP());
 const ceilStep  = n => Math.max(CFG.min, Math.ceil (n/STEP())*STEP());
 
 const ME = () => CFG.teams[0];
+const isSnake = () => CFG.mode === "snake";
+const order = () => (CFG.order && CFG.order.length===CFG.teams.length) ? CFG.order : CFG.teams;
+
+/* Serpentine order: odd rounds run down the list, even rounds run back up. */
+function teamOnPick(n){                       // n is 1-indexed overall pick number
+  const O=order(), T=O.length;
+  const rd=Math.ceil(n/T), slot=n-(rd-1)*T;
+  return O[rd%2 ? slot-1 : T-slot];
+}
+const livePicks = () => S.picks.filter(x=>!x.keep).length;
+const pickNo    = () => livePicks()+1;                       // who is on the clock
+const roundNo   = () => Math.ceil(pickNo()/order().length);
+const onClock   = () => teamOnPick(pickNo());
+const totalPicks= () => order().length*CFG.slots - S.picks.filter(x=>x.keep).length;
+
+function myNextPick(){                        // next overall pick number that is mine
+  const cap=order().length*CFG.slots;
+  for(let n=pickNo();n<=cap;n++) if(teamOnPick(n)===ME()) return n;
+  return null;
+}
+const picksUntilMine = () => { const n=myNextPick(); return n===null?null:n-pickNo(); };
 const drafted = () => new Set(S.picks.map(x=>x.n));
 const ownerOf = n => S.picks.find(x=>x.n===n) || null;   // team + price for a gone player
 const avail = () => { const d=drafted(); return P.filter(p=>!d.has(p.n)); };
 const slotsLeft = t => CFG.slots - (S.teams[t]?.used||0);
-const maxBid = t => { const raw=(S.teams[t]?.cash||0)-Math.max(0,slotsLeft(t)-1)*CFG.min;
+const maxBid = t => { if(isSnake()) return 0;
+                      const raw=(S.teams[t]?.cash||0)-Math.max(0,slotsLeft(t)-1)*CFG.min;
                       return raw<CFG.min ? 0 : floorStep(raw); };
 
 function inflation(){
+  if(isSnake()) return 1;
   let cash=0, slots=0;
   CFG.teams.forEach(t=>{cash+=S.teams[t].cash; slots+=Math.max(0,slotsLeft(t));});
   if(slots<=0) return 1;
@@ -485,6 +531,9 @@ function buildCache(){
 const posInfo = pos => (CACHE||buildCache()).pos[pos]||{heat:1,rep:CFG.min,demand:0,supply:0};
 /* going rate: what this player should actually cost once scarcity is priced in */
 const expected = p => snap(adj(p)*posInfo(p.p).heat);
+/* In a snake draft price is meaningless; position on the board is the currency. */
+const rankOf = p => avail().sort((a,b)=>b.v-a.v).findIndex(x=>x.n===p.n)+1;
+const priceLabel = p => isSnake() ? "#"+rankOf(p) : "$"+expected(p);
 
 function recommend(only){
   const me=ME(), cap=maxBid(me), open=openSlotsFor(me);
@@ -507,16 +556,18 @@ function recommend(only){
     const takes=open.find(s=>fitsSlot(p.p,s)) || null;   // first slot it would occupy
     const fills=!!takes;
     const others=open.filter(s=>!fitsSlot(p.p,s));
-    const commit=others.reduce((s,sl)=>s+reserve(sl),0);
-    const room=S.teams[me].cash-commit-Math.max(0,slotsLeft(me)-1-others.length)*CFG.min;
+    const commit=isSnake()?0:others.reduce((s,sl)=>s+reserve(sl),0);
+    const room=isSnake()?Infinity
+      :S.teams[me].cash-commit-Math.max(0,slotsLeft(me)-1-others.length)*CFG.min;
     const edge=Math.max(0,p.v-info.rep);
     let score=(edge+1)/Math.max(exp,1);
     score*= fills?1.7:0.55;
     if((starterByes[p.b]||0)>=2) score*=0.7;
-    if(exp>room) score*=0.25;
+    if(!isSnake() && exp>room) score*=0.25;
+    if(isSnake()) score=(edge+1)*(fills?1.7:0.55)*((starterByes[p.b]||0)>=2?0.7:1);
     return {p,exp,fills,takes,edge,info,room:Math.min(room,cap),
             tight:exp>Math.min(room,cap),score};
-  }).filter(x=>x.exp<=cap).sort((a,b)=>b.score-a.score);
+  }).filter(x=>isSnake()||x.exp<=cap).sort((a,b)=>b.score-a.score);
   return {done:false, open, list:list.slice(0,3)};
 }
 
@@ -531,7 +582,7 @@ function suggest(){
        <div class="pmain"><div class="pname">${esc(p.n)}${p.risk?' <span class="flag">!</span>':""}</div>
        <div class="pmeta"><span class="tag ${p.p}">${p.p}</span>${p.t} · bye ${p.b}${(()=>{const o=ownerOf(p.n);
          return o?` · <span style="color:var(--stop)">gone → ${esc(o.tm)} $${o.$}</span>`:""})()}</div></div>
-       <div class="pval num">$${expected(p)}</div></div>`).join("")+"</div>":"";
+       <div class="pval num">${priceLabel(p)}</div></div>`).join("")+"</div>":"";
 }
 function pickSugg(i){
   sel=P[i];
@@ -542,8 +593,48 @@ function pickSugg(i){
   bid.step=STEP(); bid.min=CFG.min;
   verdict();
 }
+function verdictSnake(){
+  const slab=document.getElementById("slab"), me=ME();
+  const gone=drafted().has(sel.n), o=ownerOf(sel.n);
+  const list=avail().sort((a,b)=>b.v-a.v);
+  const idx=list.findIndex(x=>x.n===sel.n);          // 0 = best player left
+  const gap=picksUntilMine();
+  const mine=onClock()===me;
+  const demand=slotDemandFor(sel.p);
+  const posList=list.filter(p=>p.p===sel.p);
+  const posIdx=posList.findIndex(x=>x.n===sel.n);
+  let cls,call,lines=[];
+  if(gone){cls="stop";call="Off the board";
+    lines.push(o?`Went to <b>${esc(o.tm)}</b>${o.keep?" (keeper)":""}`:"Already drafted.")}
+  else {
+    /* Roughly: if more picks happen before your turn than there are better players
+       left, someone ahead of you takes him. */
+    const lasts = gap===null ? false : idx >= gap;
+    if(mine && idx===0){cls="go";call="Best available"}
+    else if(mine && demand>0){cls="go";call="Take him"}
+    else if(mine){cls="hold";call="Fills no slot"}
+    else if(!lasts){cls="stop";call="Won't last"}
+    else {cls="hold";call="Should last"}
+    lines.push(`<b>#${idx+1}</b> overall left · <b>${sel.p}${posIdx+1}</b> at his position`);
+    lines.push(demand>0?`Fills a starting <b>${sel.p}</b> slot (${demand} open)`
+                       :`Bench depth — your ${sel.p} starters are set`);
+    if(mine) lines.push(`<b>You are on the clock</b> — pick ${pickNo()}, round ${roundNo()}`);
+    else if(gap===null) lines.push("Your roster is full.");
+    else lines.push(lasts
+      ? `${gap} picks until your turn and ${idx} better players left — likely still there`
+      : `Only ${idx} better player${idx===1?"":"s"} left but ${gap} picks before your turn — he'll be gone`);
+    const clash=S.picks.filter(x=>x.tm===me).map(x=>byName[x.n.toLowerCase()])
+      .filter(p=>p&&p.b===sel.b&&["QB","RB","WR","TE"].includes(p.p));
+    if(clash.length>=2) lines.push(`⚠︎ Week ${sel.b} bye already takes out ${clash.length} of yours`);
+    if(sel.risk) lines.push(`<span style="color:var(--hold)">${sel.risk}</span>`);
+  }
+  slab.className="slab "+cls;
+  slab.innerHTML=`<div class="call">${call}</div><div class="sub">${lines.join("<br>")}</div>`;
+}
+
 function verdict(){
   const slab=document.getElementById("slab");
+  if(sel && isSnake()) return verdictSnake();
   if(!sel){slab.className="slab";slab.innerHTML='<div class="call" style="font-size:19px;color:var(--dim)">Type a name</div><div class="sub">Start typing and tap a match, then enter the current bid.</div>';return}
   const typed=Math.max(0,Math.round(+document.getElementById("q-bid").value||0));
   const bid=typed?snap(typed):0;                 // what was actually shouted, on-increment
@@ -588,13 +679,16 @@ function verdict(){
 
 /* ---------- record ---------- */
 function openSheet(i){
-  pending=P[i]; pendTeam=null;
+  pending=P[i]; pendTeam=isSnake()?onClock():null;
+  document.getElementById("sh-pricebox").style.display=isSnake()?"none":"";
+  document.getElementById("sh-title").textContent=isSnake()
+    ? `Pick ${pickNo()} · round ${roundNo()}` : "Winning price";
   document.getElementById("sh-name").textContent=pending.n;
   document.getElementById("sh-meta").innerHTML=
     `<span class="tag ${pending.p}">${pending.p}</span>${pending.t} · bye ${pending.b} · going rate $${expected(pending)}`;
   document.getElementById("sh-price").value=expected(pending);
   document.getElementById("sh-teams").innerHTML=CFG.teams.map(t=>
-    `<div class="pick" id="pk-${cssId(t)}" onclick="pickTeam(${JSON.stringify(t).replace(/"/g,'&quot;')})">${esc(t)}</div>`).join("");
+    `<div class="pick${isSnake()&&t===onClock()?" on":""}" id="pk-${cssId(t)}" onclick="pickTeam(${JSON.stringify(t).replace(/"/g,'&quot;')})">${esc(t)}${isSnake()&&t===onClock()?" ●":""}</div>`).join("");
   document.getElementById("veil").classList.add("on");
   const pr=document.getElementById("sh-price");
   setTimeout(()=>{pr.focus(); const v=pr.value; try{pr.setSelectionRange(v.length,v.length)}catch(e){}},60);
@@ -628,6 +722,15 @@ function watch(i){
 }
 const watched = n => S.watch.includes(n);
 
+function soldFromCheck(){
+  if(!sel) return toast("Pick a player first");
+  if(drafted().has(sel.n)) return toast(sel.n+" is already gone");
+  openSheet(sel.i);
+  if(!isSnake()){                       // carry across whatever bid is on screen
+    const b=snap(+document.getElementById("q-bid").value||0);
+    if(b>=CFG.min) document.getElementById("sh-price").value=b;
+  }
+}
 function clearBid(){
   sel=null;
   document.getElementById("q-name").value="";
@@ -649,11 +752,14 @@ const cell = v => { const t=String(v??"");
 const stamp = () => new Date().toISOString().slice(0,10);
 
 function exportCSV(){
-  const head=["Order","Player","Pos","NFL","Bye","Drafted by","Price","Going rate","Over/under","Keeper"];
+  const head=isSnake()?["Pick","Player","Pos","NFL","Bye","Drafted by","Round","Keeper"]
+                      :["Order","Player","Pos","NFL","Bye","Drafted by","Price","Going rate","Over/under","Keeper"];
   const rows=S.picks.map((x,i)=>{
     const p=byName[x.n.toLowerCase()];
     const w=p?expected(p):"";
-    return [i+1,x.n,p?p.p:"",p?p.t:"",p?p.b:"",x.tm,x.$,w,w!==""?w-x.$:"",x.keep?"Y":""];
+    return isSnake()
+      ? [i+1,x.n,p?p.p:"",p?p.t:"",p?p.b:"",x.tm,Math.ceil((i+1)/order().length),x.keep?"Y":""]
+      : [i+1,x.n,p?p.p:"",p?p.t:"",p?p.b:"",x.tm,x.$,w,w!==""?w-x.$:"",x.keep?"Y":""];
   });
   download([head,...rows].map(r=>r.map(cell).join(",")).join("\r\n"),
            `${CFG.name.toLowerCase().replace(/\W+/g,"-")}-draft-${stamp()}.csv`,"text/csv");
@@ -680,37 +786,38 @@ function buildReport(){
     const stack=Object.entries(byes).filter(([,c])=>c>=2).map(([w,c])=>`Wk ${w}: ${c}`).join(", ");
     return `<div class="team">
       <div class="tt">${esc(t)}${t===me?" (you)":""}
-        <span class="sm">— spent $${spent}, ${money(t)}${stack?` · bye stack ${stack}`:""}</span></div>
+        <span class="sm">— ${isSnake()?`${roster.length} picks`:`spent $${spent}, ${money(t)}`}${stack?` · bye stack ${stack}`:""}</span></div>
       <table><tr><th style="width:52px">Slot</th><th>Player</th><th style="width:38px">Pos</th>
-        <th style="width:44px">NFL</th><th class="n" style="width:38px">Bye</th><th class="n" style="width:52px">Price</th></tr>
+        <th style="width:44px">NFL</th><th class="n" style="width:38px">Bye</th>${isSnake()?"":'<th class="n" style="width:52px">Price</th>'}</tr>
         ${rows.map(([slot,p])=>`<tr><td>${slot}</td>
           <td>${p?esc(p.n)+(p.keep?" (K)":""):"<i style='color:#aaa'>open</i>"}</td>
           <td>${p?p.p:""}</td><td>${p?p.t:""}</td>
-          <td class="n">${p?p.b:""}</td><td class="n">${p?"$"+p.$:""}</td></tr>`).join("")}
-        ${benchOpen>0?`<tr><td colspan="6" style="color:#aaa;font-style:italic">${benchOpen} bench spot${benchOpen>1?"s":""} open</td></tr>`:""}
+          <td class="n">${p?p.b:""}</td>${isSnake()?"":`<td class="n">${p?"$"+p.$:""}</td>`}</tr>`).join("")}
+        ${benchOpen>0?`<tr><td colspan="${isSnake()?5:6}" style="color:#aaa;font-style:italic">${benchOpen} bench spot${benchOpen>1?"s":""} open</td></tr>`:""}
       </table></div>`;
   };
   const live=S.picks.filter(x=>!x.keep);
   const lineup=CFG.lineup.filter(([,n])=>n>0).map(([s,n])=>n>1?n+" "+s:s).join(" / ");
   document.getElementById("report").innerHTML=`
     <h1>Auction draft results</h1>
-    <div class="meta">${CFG.teams.length} teams · $${CFG.budget} · $${CFG.min} minimum · ${CFG.slots} spots · ${esc(lineup)}
+    <div class="meta">${CFG.teams.length} teams · ${isSnake()?"snake draft":`$${CFG.budget} · $${CFG.min} minimum`} · ${CFG.slots} spots · ${esc(lineup)}
       · ${live.length} players bought, ${S.picks.length-live.length} keepers · printed ${new Date().toLocaleString()}</div>
     <h2>Rosters</h2>
     ${CFG.teams.map(teamBlock).join("")}
-    <h2>Money</h2>
+    ${isSnake()?"":`<h2>Money</h2>
     <table><tr><th>Team</th><th class="n">Spent</th><th class="n">Left</th><th class="n">Slots open</th><th class="n">Max bid</th></tr>
       ${CFG.teams.map(t=>`<tr><td>${esc(t)}${t===me?" (you)":""}</td>
         <td class="n">$${CFG.budget-S.teams[t].cash}</td><td class="n">$${S.teams[t].cash}</td>
         <td class="n">${slotsLeft(t)}</td><td class="n">$${maxBid(t)}</td></tr>`).join("")}
-    </table>
+    </table>`}
     <h2>Every pick in order</h2>
     <table><tr><th class="n" style="width:28px">#</th><th>Player</th><th style="width:38px">Pos</th>
-      <th>Drafted by</th><th class="n" style="width:52px">Price</th><th class="n" style="width:60px">Going rate</th></tr>
+      <th>Drafted by</th>${isSnake()?'<th class="n" style="width:52px">Round</th>':'<th class="n" style="width:52px">Price</th><th class="n" style="width:60px">Going rate</th>'}</tr>
       ${S.picks.map((x,i)=>{const p=byName[x.n.toLowerCase()];
         return `<tr><td class="n">${i+1}</td><td>${esc(x.n)}${x.keep?" (K)":""}</td>
           <td>${p?p.p:""}</td><td>${esc(x.tm)}</td>
-          <td class="n">$${x.$}</td><td class="n">${p?"$"+expected(p):""}</td></tr>`}).join("")}
+          ${isSnake()?`<td class="n">${Math.ceil((i+1)/order().length)}</td>`
+            :`<td class="n">$${x.$}</td><td class="n">${p?"$"+expected(p):""}</td>`}</tr>`}).join("")}
     </table>`;
 }
 function exportPDF(){
@@ -768,14 +875,30 @@ function restore(){
 }
 
 /* ---------- setup ---------- */
+let cfgMode="auction";
+function pickMode(m){
+  cfgMode=m;
+  document.getElementById("md-auction").classList.toggle("on",m==="auction");
+  document.getElementById("md-snake").classList.toggle("on",m==="snake");
+  document.getElementById("c-auctionbox").style.display=m==="auction"?"":"none";
+  document.getElementById("c-snakebox").style.display=m==="snake"?"":"none";
+  setupSums();
+}
 function openSetup(){
+  cfgMode=CFG.mode||"auction";
+  document.getElementById("c-budget").value=CFG.budget;
+  document.getElementById("c-min").value=CFG.min;
+  document.getElementById("c-order").value=order().join("\n");
+  pickMode(cfgMode);
   document.getElementById("c-lineup").innerHTML=CFG.lineup.map(([s,n])=>
     `<div><label>${s}</label><input class="fld num c-ln" data-slot="${s}" type="number" inputmode="numeric" min="0" value="${n}"></div>`).join("");
   document.getElementById("c-teams").value=CFG.teams.join("\n");
   document.getElementById("c-keepers").value=CFG.keepers.map(k=>k.join(" | ")).join("\n");
-  [...document.querySelectorAll(".c-ln")].forEach(e=>e.addEventListener("input",setupSums));
-  document.getElementById("c-keepers").addEventListener("input",setupSums);
-  document.getElementById("c-teams").addEventListener("input",setupSums);
+  ["c-budget","c-min","c-order","c-keepers","c-teams"].forEach(id=>{
+    const e=document.getElementById(id);
+    e.oninput=setupSums;                       // assign, so reopening doesn't stack handlers
+  });
+  [...document.querySelectorAll(".c-ln")].forEach(e=>e.oninput=setupSums);
   setupSums();
   document.getElementById("setup").classList.add("on");
 }
@@ -797,6 +920,18 @@ function setupSums(){
     msgs.push(`Not in the player pool: ${bad.map(esc).join(", ")} — still marked gone, but with no value attached.`);
   document.getElementById("c-keepcheck").innerHTML =
     msgs.length?msgs.join("<br>"):`${rows.length} keepers recognised.`;
+
+  const bud=+document.getElementById("c-budget").value||0, mn=+document.getElementById("c-min").value||0;
+  document.getElementById("c-budgethint").innerHTML = (bud<CFG.slots*mn)
+    ? `<span style="color:var(--stop)">$${bud} can't fill ${CFG.slots} slots at $${mn} minimum</span>`
+    : `$${bud} over ${CFG.slots} slots · $${(bud/CFG.slots).toFixed(0)} a slot · opening max bid $${bud-(CFG.slots-1)*mn}. Player values rescale automatically.`;
+
+  const ord=document.getElementById("c-order").value.split("\n").map(x=>x.trim()).filter(Boolean);
+  const missing=teams.filter(t=>!ord.includes(t)), extra=ord.filter(t=>!teams.includes(t));
+  document.getElementById("c-orderhint").innerHTML =
+    (missing.length||extra.length)
+      ? `<span style="color:var(--stop)">${missing.length?"Missing: "+missing.map(esc).join(", "):""}${missing.length&&extra.length?" · ":""}${extra.length?"Unknown: "+extra.map(esc).join(", "):""}</span>`
+      : `${ord.length} teams · you pick ${ord.indexOf(teams[0])+1}${ord.indexOf(teams[0])===0?"st":ord.indexOf(teams[0])===1?"nd":ord.indexOf(teams[0])===2?"rd":"th"} in round 1.`;
 }
 function parseKeepers(txt){
   const rows=[],bad=[];
@@ -823,15 +958,27 @@ function applySetup(){
   const rename={}; CFG.teams.forEach((old,i)=>rename[old]=teams[i]);
   const live=S.picks.filter(x=>!x.keep).map(x=>({...x, tm:rename[x.tm]||x.tm}));
 
-  CFG={...CFG, lineup, teams, keepers};
+  const bud=Math.max(1,+document.getElementById("c-budget").value||CFG.budget);
+  const mn=Math.max(1,+document.getElementById("c-min").value||CFG.min);
+  if(cfgMode==="auction" && bud < CFG.slots*mn)
+    return toast(`$${bud} can't fill ${CFG.slots} slots at $${mn}`);
+  let ord=document.getElementById("c-order").value.split("\n").map(x=>x.trim()).filter(Boolean);
+  if(cfgMode==="snake"){
+    const missing=teams.filter(t=>!ord.includes(t));
+    if(missing.length||ord.length!==teams.length) return toast("Draft order must list every team once");
+  } else if(ord.length!==teams.length) ord=teams.slice();
+
+  const budgetChanged = bud!==CFG.budget || mn!==CFG.min || cfgMode!==CFG.mode;
+  CFG={...CFG, mode:cfgMode, budget:bud, min:mn, order:ord, lineup, teams, keepers};
   buildPool();
   S=freshState();                       // rebuilds keeper rows from the edited list
   live.forEach(x=>{                     // then replays everything drafted so far
     if(!S.teams[x.tm]) return;
-    S.picks.push(x); S.teams[x.tm].cash-=x.$; S.teams[x.tm].used+=1;
+    const amt=isSnake()?0:Math.min(x.$,S.teams[x.tm].cash);
+    S.picks.push({...x,$:amt}); S.teams[x.tm].cash-=amt; S.teams[x.tm].used+=1;
   });
   sel=null; closeSetup(); save();
-  toast(live.length?`Updated · ${live.length} picks kept`:"Updated");
+  toast(live.length?`Updated · ${live.length} picks kept`:(budgetChanged?`Switched to ${CFG.mode==="snake"?"snake":"auction"}`:"Updated"));
 }
 function closeSetup(){document.getElementById("setup").classList.remove("on")}
 
@@ -840,14 +987,29 @@ function render(){
   CACHE=null; buildCache();
   const me=ME(), m=S.teams[me], left=slotsLeft(me);
   document.getElementById("brand").innerHTML=`${esc(CFG.name)} <em>Board</em>`;
-  document.getElementById("s-max").textContent="$"+maxBid(me);
-  document.getElementById("s-money").textContent="$"+m.cash;
-  document.getElementById("s-slots").textContent=left;
-  document.getElementById("s-avg").textContent="$"+(left>0?Math.floor(m.cash/left):0);
-  document.getElementById("s-spent").textContent="$"+(CFG.budget-m.cash);
-  const f=inflation();
-  document.getElementById("infl").textContent=
-    (f>=1.03?"Prices running hot ":f<=0.97?"Bargains out there ":"Market is fair ")+"· "+f.toFixed(2)+"×";
+  const lab=(id,v,l)=>{document.getElementById(id).textContent=v;
+    document.getElementById(id).nextElementSibling.textContent=l};
+  if(isSnake()){
+    const gap=picksUntilMine(), clock=onClock();
+    lab("s-max", gap===null?"—":(gap===0?"NOW":gap), gap===0?"On the clock":"Picks away");
+    lab("s-money", "#"+pickNo(), "Pick");
+    lab("s-slots", left, "Slots");
+    lab("s-avg", roundNo(), "Round");
+    lab("s-spent", clock||"—", "On the clock");
+    document.getElementById("infl").textContent=
+      livePicks()+" of "+totalPicks()+" picks made";
+  } else {
+    lab("s-max","$"+maxBid(me),"Max bid");
+    lab("s-money","$"+m.cash,"Left");
+    lab("s-slots",left,"Slots");
+    lab("s-avg","$"+(left>0?Math.floor(m.cash/left):0),"Per slot");
+    lab("s-spent","$"+(CFG.budget-m.cash),"Spent");
+    const f=inflation();
+    document.getElementById("infl").textContent=
+      (f>=1.03?"Prices running hot ":f<=0.97?"Bargains out there ":"Market is fair ")+"· "+f.toFixed(2)+"×";
+  }
+  document.getElementById("q-bid").style.display=isSnake()?"none":"";
+  document.querySelector("#foot").style.opacity=1;
 
   /* my own players stay separate from whichever roster is being viewed */
   const objs=S.picks.filter(x=>x.tm===me)
@@ -867,14 +1029,14 @@ function render(){
     if(f)used.add(f.n);
     rows+=`<div class="slot"><span class="lb">${slot}</span>
       <span class="fill${f?"":" empty"}">${f?esc(f.n)+(f.keep?' <span class="kp">K</span>':"")+' <span style="color:var(--dim);font-size:11px">bye '+f.b+'</span>':"open"}</span>
-      <span class="pr num">${f?"$"+f.$:""}</span></div>`;
+      <span class="pr num">${f&&!isSnake()?"$"+f.$:""}</span></div>`;
   }});
   const startCount=CFG.lineup.reduce((s,[,n])=>s+n,0);
   for(let k=0;k<CFG.slots-startCount;k++){ const f=pool[k];
     rows+=`<div class="slot"><span class="lb">BN${k+1}</span>
       <span class="fill${f?"":" empty"}">${f?esc(f.n)+(f.keep?' <span class="kp">K</span>':""):"open"}</span>
       ${f?`<span class="bnmeta"><span class="tag ${f.p}">${f.p}</span>bye ${f.b}</span>`:""}
-      <span class="pr num">${f?"$"+f.$:""}</span></div>`; }
+      <span class="pr num">${f&&!isSnake()?"$"+f.$:""}</span></div>`; }
   if(unknown.length) rows+=`<div class="slot"><span class="lb">?</span>
       <span class="fill">${unknown.map(x=>esc(x.n)).join(", ")}</span>
       <span class="pr num">$${unknown.reduce((s,x)=>s+x.$,0)}</span></div>`;
@@ -886,15 +1048,33 @@ function render(){
   document.getElementById("byewarn").innerHTML=bad.length
     ?`<div class="warn">${rt===me?"Bye stack":esc(rt)+" bye stack"}: ${bad.map(([w,c])=>`Week ${w} takes out ${c} starters`).join(" · ")}</div>`:"";
 
-  const order=CFG.teams.map(t=>({t,mb:maxBid(t),sl:slotsLeft(t)})).sort((a,b)=>b.mb-a.mb);
-  document.getElementById("league").innerHTML=order.map(o=>{
-    const threat=o.t!==me&&o.mb>=maxBid(me)*0.9&&o.sl>0;
-    return `<div class="tm ${o.t===me?"me":""} ${threat?"threat":""}">
-      <span class="nm">${esc(o.t)}${o.sl<=0?" · full":""}</span>
-      <span class="sl num">${o.sl} left</span><span class="mb num">$${o.mb}</span></div>`}).join("");
+  document.querySelector("#league").previousElementSibling;
+  if(isSnake()){
+    document.getElementById("leaguehead").textContent="Coming up";
+    const cap=order().length*CFG.slots, upto=Math.min(cap,pickNo()+11);
+    let html="";
+    for(let n=pickNo();n<upto;n++){ const t=teamOnPick(n);
+      html+=`<div class="tm ${t===me?"me":""} ${n===pickNo()?"clock":""}">
+        <span class="nm">${n===pickNo()?"▶ ":""}${esc(t)}</span>
+        <span class="sl num">rd ${Math.ceil(n/order().length)}</span>
+        <span class="mb num">#${n}</span></div>`; }
+    document.getElementById("league").innerHTML=html||'<div class="hint">Draft complete.</div>';
+    document.getElementById("leaguehint").textContent="Serpentine order. Your rows are highlighted.";
+  } else {
+    document.getElementById("leaguehead").textContent="Who can outbid me";
+    const ord=CFG.teams.map(t=>({t,mb:maxBid(t),sl:slotsLeft(t)})).sort((a,b)=>b.mb-a.mb);
+    document.getElementById("league").innerHTML=ord.map(o=>{
+      const threat=o.t!==me&&o.mb>=maxBid(me)*0.9&&o.sl>0;
+      return `<div class="tm ${o.t===me?"me":""} ${threat?"threat":""}">
+        <span class="nm">${esc(o.t)}${o.sl<=0?" · full":""}</span>
+        <span class="sl num">${o.sl} left</span><span class="mb num">$${o.mb}</span></div>`}).join("");
+    document.getElementById("leaguehint").textContent=
+      "Max bid = that team's cash minus the minimum held back for each empty slot after this one.";
+  }
 
   const rec=recommend(recFilter);
   const openMine=openSlotsFor(me);
+  document.getElementById("rechead").textContent=isSnake()?"Best available for you":"Next target";
   const tabPos=["ALL"].concat(["QB","RB","WR","TE","FLEX","K","DEF"]
     .filter(x=>x!=="FLEX"||CFG.lineup.some(([s,n])=>s==="FLEX"&&n>0)));
   document.getElementById("rectabs").innerHTML=tabPos.map(x=>{
@@ -916,7 +1096,9 @@ function render(){
         if(info.demand>info.supply&&info.supply>0)
           why.push(`${Math.round(info.demand)} still needed at ${p.p}, ${info.supply} good ones left`);
         else if(info.heat<0.95) why.push(`${p.p} is deep — no rush`);
-        if(r.edge>0) why.push(`$${r.edge} better than the next ${p.p} you'd settle for`);
+        if(r.edge>0) why.push(isSnake()
+          ? `clearly ahead of the next ${p.p} on the board`
+          : `$${r.edge} better than the next ${p.p} you'd settle for`);
         return `<div class="rec ${i===0?"top":""}">
           <div class="prow" style="border:0;padding:0">
             <div class="pmain" onclick="pickSugg(${p.i});scrollTo({top:0,behavior:'smooth'})">
@@ -924,15 +1106,17 @@ function render(){
               <div class="pmeta"><span class="tag ${p.p}">${p.p}</span>${p.t} · bye ${p.b}</div>
             </div>
             <div style="text-align:right">
-              <div class="pval num" style="color:${i===0?"var(--amber)":"var(--text)"}">$${r.exp}</div>
-              <div class="pmeta" style="margin:0">going rate</div>
+              <div class="pval num" style="color:${i===0?"var(--amber)":"var(--text)"}">${isSnake()?"#"+rankOf(p):"$"+r.exp}</div>
+              <div class="pmeta" style="margin:0">${isSnake()?"on the board":"going rate"}</div>
             </div>
             <button class="btn tiny star ${watched(p.n)?"on":""}" onclick="watch(${p.i})">${watched(p.n)?"★":"☆"}</button>
             <button class="btn tiny" onclick="openSheet(${p.i})">Sold</button>
           </div>
-          <div class="recwhy">${why.join(" · ")}${r.tight?` · <span style="color:var(--hold)">stretches your budget</span>`:""}${p.risk?`<div style="color:var(--hold);margin-top:5px">! ${esc(p.risk)}</div>`:""}</div>
+          <div class="recwhy">${why.join(" · ")}${!isSnake()&&r.tight?` · <span style="color:var(--hold)">stretches your budget</span>`:""}${p.risk?`<div style="color:var(--hold);margin-top:5px">! ${esc(p.risk)}</div>`:""}</div>
         </div>`}).join("")
-      : `<div class="hint">${recFilter==="ALL"?"Nothing left you can afford at your ceiling.":`No ${recFilter} left within your $${maxBid(me)} ceiling.`}</div>`);
+      : `<div class="hint">${isSnake()
+         ? (recFilter==="ALL"?"Nobody left on the board.":`No ${recFilter} left.`)
+         : (recFilter==="ALL"?"Nothing left you can afford at your ceiling.":`No ${recFilter} left within your $${maxBid(me)} ceiling.`)}</div>`);
 
   const q=document.getElementById("q-search").value.trim().toLowerCase();
   let list=avail();
@@ -952,7 +1136,7 @@ function render(){
       <div class="pmain" onclick="pickSugg(${p.i});scrollTo({top:0,behavior:'smooth'})">
         <div class="pname">${esc(p.n)}${p.risk?' <span class="flag">!</span>':""}</div>
         <div class="pmeta"><span class="tag ${p.p}">${p.p}</span>${p.t} · bye ${p.b}${p.hit?` · <span style="color:var(--stop)">was $${snap(p.full*inflation()*posInfo(p.p).heat)}</span>`:""}</div></div>
-      <div class="pval num" style="${w>cap?"color:var(--dim)":""}">$${w}</div>
+      <div class="pval num" style="${!isSnake()&&w>cap?"color:var(--dim)":""}">${priceLabel(p)}</div>
       <button class="btn tiny star ${watched(p.n)?"on":""}" onclick="watch(${p.i})" title="Watch">${watched(p.n)?"★":"☆"}</button>
       <button class="btn tiny" onclick="openSheet(${p.i})">Sold</button></div>`;
   }).join("")||'<div class="hint" style="padding:14px 0">Nobody matches that.</div>';
@@ -993,7 +1177,7 @@ function render(){
             <div class="pname">${esc(p.n)}${p.risk?' <span class="flag">!</span>':""}</div>
             <div class="pmeta"><span class="tag ${p.p}">${p.p}</span>${p.t}</div>
           </div>
-          <div class="pval num">$${expected(p)}</div>
+          <div class="pval num">${priceLabel(p)}</div>
           <button class="btn tiny star ${watched(p.n)?"on":""}" onclick="watch(${p.i})">${watched(p.n)?"★":"☆"}</button>
           <button class="btn tiny" onclick="openSheet(${p.i})">Sold</button>
         </div>`).join("")}</div>`:""}
@@ -1008,7 +1192,7 @@ function render(){
             <div class="pname" style="${o?"opacity:.45;text-decoration:line-through":""}">${esc(p.n)}${p.risk?' <span class="flag">!</span>':""}</div>
             <div class="pmeta"><span class="tag ${p.p}">${p.p}</span>${p.t} · bye ${p.b}${o?` · <span style="color:var(--stop)">${esc(o.tm)} $${o.$}</span>`:""}</div>
           </div>
-          <div class="pval num" style="${o?"color:var(--dim)":""}">$${expected(p)}</div>
+          <div class="pval num" style="${o?"color:var(--dim)":""}">${priceLabel(p)}</div>
           <button class="btn tiny star on" onclick="watch(${p.i})">★</button>
           ${o?"":`<button class="btn tiny" onclick="openSheet(${p.i})">Sold</button>`}
         </div>`}).join("")
@@ -1018,7 +1202,7 @@ function render(){
   const live=S.picks.filter(x=>!x.keep).slice().reverse();
   document.getElementById("log").innerHTML=live.length
     ?live.slice(0,14).map(x=>`<div class="tm"><span class="nm">${esc(x.n)}</span>
-       <span class="sl">${esc(x.tm)}</span><span class="mb num">$${x.$}</span></div>`).join("")
+       <span class="sl">${esc(x.tm)}</span><span class="mb num">${isSnake()?"":"$"+x.$}</span></div>`).join("")
      +(live.length>14?`<div class="hint" style="padding-top:7px">+${live.length-14} earlier</div>`:"")
     :'<div class="hint">Nothing drafted yet. Keepers are already loaded.</div>';
   document.getElementById("btn-undo").disabled=!live.length;

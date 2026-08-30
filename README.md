@@ -66,6 +66,26 @@ These notes were checked on 29 August 2026 and are a snapshot, not a feed. Re-ch
 anything flagged on the morning of the draft — suspension rulings in particular can
 land at any time. The list lives in the `RISK` object near the top of the script.
 
+## Draft type
+
+**Fix details** has an Auction / Snake toggle.
+
+In **auction** mode everything runs on money: budgets, maximum bids, inflation and going
+rates. The budget and minimum bid are editable, and player values rescale to whatever
+you set.
+
+In **snake** mode money disappears entirely. The board tracks pick number, round and who
+is on the clock, following serpentine order — odd rounds run down the list, even rounds
+back up. Set the order in the same panel; you can put yourself anywhere. The bid check
+becomes a draft check: it shows where a player sits on the board and whether he is
+likely to survive until your next turn, comparing how many picks happen before your turn
+against how many better players remain. Prices become ranks, the outbid panel becomes a
+coming-up list, and the sold sheet pre-selects whoever is on the clock so recording a
+pick is two taps.
+
+Switching modes keeps your keepers and rosters. Money is dropped going into snake mode
+and cannot be recovered by switching back, so export first if you want the record.
+
 ## Exporting results
 
 Three buttons under the draft log:
