@@ -62,9 +62,34 @@ Flagged players carry a red marker in the pool and the reason appears in the bid
 and on the recommendation card. Where a discount applies, the undiscounted price is
 shown alongside so you can see what was taken off.
 
+Discounts apply to the auction board only. The Half-PPR board is a dated ranking that
+already reflects known news, so discounting it again would double-count; there the note
+appears but the order is left alone.
+
 These notes were checked on 29 August 2026 and are a snapshot, not a feed. Re-check
 anything flagged on the morning of the draft — suspension rulings in particular can
 land at any time. The list lives in the `RISK` object near the top of the script.
+
+## Leagues
+
+Two tabs sit at the top of the page:
+
+- **Keeper Auction** — 10 teams, $600, full PPR, 17 keepers, flex.
+- **ONCU 2026** — 12 teams, snake, half PPR, no keepers, WR/TE slot alongside the flex.
+
+Tap either to switch. Each league keeps its own config, its own draft and its own watch
+list in separate storage, so switching parks one and picks the other up exactly where
+you left it — mid-draft, mid-round, nothing lost. The tab shows how many picks are
+waiting in the league you are not looking at, and the app reopens on whichever you used
+last.
+
+Each carries its own player board. The auction league uses FFToday's PPR auction values;
+ONCU uses their Half-PPR top 225. **Reset this league to defaults**, inside Fix details,
+clears one league without touching the other.
+
+Composite slots are supported: FLEX takes RB, WR or TE, and WR/TE takes either. A player
+is shown against the first open slot he actually fits, so once your TE slot is full a
+tight end reads as going into WR/TE or FLEX rather than TE.
 
 ## Draft type
 
@@ -98,8 +123,27 @@ Three buttons under the draft log:
   are collapsed so a half-finished draft does not print pages of blanks.
 - **Copy text** — a plain-text roster summary on the clipboard.
 
+**Keeper list for next year** turns the finished draft into `Team | Player | Price`
+lines in exactly the format the setup panel parses, so next season's keepers are a paste
+rather than a retype. It covers every team, not just yours, so you get the whole
+league's keeper board in one go. A price-change control adds your league's annual
+escalation to each cost. In a snake draft the round a player went in stands in for
+price, which is how most snake keeper leagues cost a carried player.
+
 Backup, further up the same card, is different: it saves machine-readable JSON for
-restoring a draft in progress, not a record to read.
+restoring a draft in progress, not a record to read. It covers the league you are
+currently viewing, so with two leagues that is two exports.
+
+## Using this again next season
+
+The player board is compiled into the file: 2026 players, 2026 bye weeks, 2026
+rankings. Come next August it needs rebuilding from a fresh board — there is no import
+for a new player list. Restoring an old backup into a new build only half works, since
+names no longer in the pool are marked drafted but carry no value.
+
+What does carry forward cleanly is the keeper list above. Export it when this draft
+ends, keep the file somewhere that is not the tablet, and paste it into next season's
+setup. Browser storage is not permanent; clearing Safari data wipes a draft.
 
 ## Bid increments
 
